@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp -r /Users/praneethbudati/Desktop/google-calender/frontend/src/components/* /Users/praneethbudati/Desktop/google-calender/frontend-next/components/)",
+      "Bash(cp -r /Users/praneethbudati/Desktop/google-calender/frontend/src/hooks/* /Users/praneethbudati/Desktop/google-calender/frontend-next/hooks/)",
+      "Bash(cp -r /Users/praneethbudati/Desktop/google-calender/frontend/src/components/views/* /Users/praneethbudati/Desktop/google-calender/frontend-next/components/views/)",
+      "Bash(sqlite3 /Users/praneethbudati/Desktop/google-calender/backend-py/calendar.db \".tables\")",
+      "Bash(sqlite3 /Users/praneethbudati/Desktop/google-calender/backend-py/calendar.db \".schema\")",
+      "Bash(source .venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(python -c \":*)",
+      "Bash(kill %1)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s -X POST http://localhost:8000/api/events -H \"Content-Type: application/json\" -d '{\"\"\"\"title\"\"\"\":\"\"\"\"Team Standup\"\"\"\",\"\"\"\"start_time\"\"\"\":\"\"\"\"2026-03-30T10:00:00\"\"\"\",\"\"\"\"end_time\"\"\"\":\"\"\"\"2026-03-30T11:00:00\"\"\"\",\"\"\"\"calendar_id\"\"\"\":1,\"\"\"\"is_all_day\"\"\"\":false,\"\"\"\"timezone\"\"\"\":\"\"\"\"UTC\"\"\"\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -sv -X POST http://localhost:8000/api/events -H \"Content-Type: application/json\" -d '{\"\"title\"\":\"\"Team Standup\"\",\"\"start_time\"\":\"\"2026-03-30T10:00:00\"\",\"\"end_time\"\":\"\"2026-03-30T11:00:00\"\",\"\"calendar_id\"\":1,\"\"is_all_day\"\":false,\"\"timezone\"\":\"\"UTC\"\"}')",
+      "Read(//private/tmp/**)",
+      "Bash(lsof -ti:8000)",
+      "Bash(xargs kill:*)",
+      "Bash(git filter-branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

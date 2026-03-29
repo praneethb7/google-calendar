@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend-py
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend-py:/app
+      - sqlite-data:/app/data
+    environment:
+      - SQLITE_URL=sqlite:///./data/calendar.db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build: ./frontend-next
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-next:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  sqlite-data:
