@@ -1,8 +1,8 @@
 # Google Calendar
 
-A high-fidelity Google Calendar web app that doubles as a **Gymnasium-compatible RL environment**. Agents interact with a realistic calendar through API actions while the UI renders the environment state in real time.
+A high-fidelity Google Calendar web app. Agents interact with a realistic calendar through API actions while the UI renders the environment state in real time.
 
-**No authentication** — single default user, designed for RL agent interaction.
+**No authentication** — single default user.
 
 ## Tech Stack
 
