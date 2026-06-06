@@ -66,10 +66,27 @@ function YearView({ onEventClick }) {
   }, [popup, events, showHolidays, getHolidaysForDate]);
 
   return (
-    <div className="h-full overflow-auto bg-white dark:bg-[#131314] rounded-[28px] pt-4 pr-8 pb-8">
-      <div className="flex flex-wrap content-start justify-between">
+    // Outer box (.s1): 1240px max-width 100%, height 721px, 28px radius,
+    // 12px bottom margin, bg #131314, Google Sans Text 14/400, scrollable
+    <div
+      className="overflow-auto bg-white dark:bg-[#131314]"
+      style={{
+        width: "1240px",
+        maxWidth: "100%",
+        height: "721px",
+        minHeight: "721px",
+        marginBottom: "12px",
+        borderRadius: "28px",
+        fontFamily: '"Google Sans Text", "Google Sans", Helvetica, Arial, sans-serif',
+        fontSize: "14px",
+        fontWeight: 400,
+      }}
+    >
+      {/* Month grid (.s3): wrap, space-between, top-aligned, pad 8px top / 32px right */}
+      <div className="flex flex-wrap content-start justify-between" style={{ paddingTop: "8px", paddingRight: "32px" }}>
         {MONTHS.map((name, m) => (
-          <div key={name} className="basis-1/4 min-w-[288px] pt-1.5 pr-3.5 pb-4 pl-[19px]">
+          // Month block (.s4 298px / 25%, .s5 pad 6/14/16/19)
+          <div key={name} className="basis-1/4 min-w-[298px] pt-1.5 pr-3.5 pb-4 pl-[19px]">
             <div
               className="flex h-8 items-center pl-[9px] text-[15px] font-medium leading-5 text-google-gray-600 dark:text-[#c4c7c5]"
               style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}

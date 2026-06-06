@@ -39,7 +39,7 @@ export const useCalendarStore = create((set, get) => ({
   calendars: [],
   selectedCalendars: [],
   events: [],
-  currentView: "month",
+  currentView: "day",
   currentDate: new Date(),
   loading: false,
   error: null,
@@ -181,6 +181,7 @@ export const useCalendarStore = create((set, get) => ({
   // ── Stubs kept for component compatibility (no-op) ────────────────────────
   fetchSharedCalendars: async () => {},
   fetchMyInvitations: async () => {},
+  updateRsvp: async () => {},
   fetchHolidays: async () => {},
   fetchPreferences: async () => {},
   holidays: [],

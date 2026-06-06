@@ -97,9 +97,23 @@ function CalendarApp() {
   };
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+  // Sidebar / header "Create" → open the same inline EventPopover that a grid
+  // click opens. Default the new event to the next full hour on the current day.
   const handleCreateEvent = () => {
-    setSelectedEvent(null);
-    setShowEventModal(true);
+    setContextMenu(null);
+    const start = new Date(currentDate);
+    const now = new Date();
+    start.setHours(now.getHours() + 1, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(end.getHours() + 1);
+    setPlaceholder({
+      start,
+      end,
+      title: "(No title)",
+      color: "#1a73e8",
+      isExisting: false,
+    });
+    setPopoverState({ show: true, x: 0, y: 0, date: start, event: null });
   };
 
   // Single click on an existing event → open read-only details popover

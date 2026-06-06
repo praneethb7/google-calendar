@@ -1,13 +1,15 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useDrop } from "react-dnd";
 import { useCalendarStore } from "@/store/useCalendarStore";
 import { useHolidayStore } from "@/store/useHolidayStore";
 import { DraggableEvent, ItemTypes } from "../DraggableEvent";
 
-const HOUR_H = 46;
-const RAIL_W = 9;
-const BAND_H = 18;
+const HOUR_H = 48;       // .s43 / .s48 hour cell height
+const RAIL_W = 9;        // .s16 left rail; vertical line sits at this x
+const BAND_H = 20;       // .s5 GMT band / all-day band height
+const GUTTER_W = 71;     // .s3 time-gutter width
+const HEADER_H = 84;     // .s2 day header height
 const toLocalISO = (d) => {
   const dt = new Date(d);
   return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString();
@@ -26,6 +28,19 @@ function DayView({ onEventClick, onEventContextMenu, onGridClick, placeholder })
 
   const isTodayDate = () => currentDate.toDateString() === now.toDateString();
   const indicatorTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_H;
+
+  // On open / day change, scroll so the current time (red line) sits in the
+  // middle of the viewport instead of starting at the top (midnight).
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = isTodayDate()
+      ? ((new Date().getHours() * 60 + new Date().getMinutes()) / 60) * HOUR_H
+      : 8 * HOUR_H; // non-today: land around 8 AM
+    el.scrollTop = Math.max(0, target - el.clientHeight / 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate]);
   const tz = (() => {
     const off = -new Date().getTimezoneOffset();
     const s = off >= 0 ? "+" : "-", a = Math.abs(off);
@@ -59,7 +74,7 @@ function DayView({ onEventClick, onEventContextMenu, onGridClick, placeholder })
     return {
       position: "absolute", top: ((s.getHours() * 60 + s.getMinutes()) / 60) * HOUR_H,
       height: Math.max((dur / 60) * HOUR_H, 20), left: "4px", right: "4px", borderRadius: "6px",
-      backgroundColor: ev.color || ev.calendar_color || "#1a73e8",
+      backgroundColor: ev.color || ev.calendar_color || "#4b99d2",
     };
   };
 
@@ -83,44 +98,58 @@ function DayView({ onEventClick, onEventContextMenu, onGridClick, placeholder })
     );
   }
 
+  const isToday = isTodayDate();
+  const headLabel = isToday
+    ? "text-google-blue dark:text-[#a8c7fa]"
+    : "text-google-gray-500 dark:text-[#c4c7c5]";
+
   return (
     <div className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden rounded-[28px]">
-      {/* Header — weekday name + date number (left-aligned with the day column) */}
-      <div className="flex sticky top-0 z-20 bg-white dark:bg-[#131314]">
-        <div className="w-[80px] min-w-[80px]" />
-        <div className="flex-1 pt-2 pb-1 pl-1">
-          <div className={`text-[11px] uppercase font-medium tracking-[0.8px] ${isTodayDate() ? "text-google-blue dark:text-[#a8c7fa]" : "text-google-gray-500 dark:text-[#c4c7c5]"}`}>
-            {currentDate.toLocaleDateString("en-US", { weekday: "short" })}
-          </div>
-          <div className="flex mt-1">
-            <span className={`w-[46px] h-[46px] flex items-center justify-center rounded-full text-[26px] font-normal ${isTodayDate() ? "bg-google-blue text-white dark:bg-[#a8c7fa] dark:text-[#062e6f]" : "text-google-gray-700 dark:text-[#e3e3e3]"}`}>
-              {currentDate.getDate()}
+      {/* === Day header (.s2 — 84px) ============================================
+          gutter holds the GMT label pinned to its bottom 20px band; the day
+          area carries the weekday/date heading plus the working-location row
+          and any all-day events, with the rail vertical line in the band. */}
+      <div
+        className="flex shrink-0 sticky top-0 z-20 bg-white dark:bg-[#131314]"
+        style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px` }}
+      >
+        {/* gutter (.s3) — GMT (.s7) sits in the bottom 20px band (.s6) */}
+        <div className="relative shrink-0" style={{ width: `${GUTTER_W}px`, minWidth: `${GUTTER_W}px` }}>
+          <div
+            className="absolute left-0 right-0 bottom-0 flex items-center justify-end pr-0.5"
+            style={{ height: `${BAND_H}px` }}
+          >
+            <span className="text-[11px] leading-4 font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] whitespace-nowrap">
+              {tz}
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Grid */}
-      <div className="flex overflow-auto flex-1">
-        {/* Time gutter: all-day band cell (with GMT) above the hour labels */}
-        <div className="w-[71px] min-w-[71px] bg-white dark:bg-[#131314]">
-          <div className="flex items-start justify-end pr-0.5 pt-1" style={{ minHeight: `${BAND_H}px` }}>
-            <span className="text-[11px] text-google-gray-500 dark:text-[#c4c7c5] font-medium tracking-[0.1px] whitespace-nowrap">{tz}</span>
-          </div>
-          {hours.map((h) => (
-            <div key={h} className="text-right pr-2 text-[11px] font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] flex items-start justify-end" style={{ height: `${HOUR_H}px` }}>
-              <span className="-mt-[6px]">{h === 0 ? "" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`}</span>
-            </div>
-          ))}
-        </div>
+        {/* day area (.s8 / .s17) */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* rail vertical line (.s18) — only across the bottom 20px band */}
+          <div
+            className="absolute border-l border-google-gray-200 dark:border-[#333537]"
+            style={{ left: `${RAIL_W}px`, top: `${HEADER_H - BAND_H}px`, bottom: 0 }}
+          />
 
-        {/* Day area — horizontal lines (incl. left nub) are full-width single
-            elements; the single day column is offset by RAIL_W. */}
-        <div className="flex-1 flex flex-col">
-          {/* All-day band */}
-          <div className="relative" style={{ minHeight: `${BAND_H}px` }}>
-            <div className="absolute left-0 right-0 bottom-0 border-b border-google-gray-200 dark:border-[#333537]" />
-            <div className="h-full border-l border-google-gray-200 dark:border-[#333537] px-1 py-0.5 flex flex-col gap-0.5" style={{ marginLeft: `${RAIL_W}px` }}>
+          {/* content offset past the rail (.s16) */}
+          <div className="flex h-full" style={{ marginLeft: `${RAIL_W}px` }}>
+            {/* weekday + date (.s19 / .s20) */}
+            <h2 className="ml-2 shrink-0 text-center" style={{ width: "46px" }} aria-label={currentDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}>
+              <div className={`mt-2 text-[11px] font-medium uppercase leading-8 tracking-[0.8px] ${headLabel}`}>
+                {currentDate.toLocaleDateString("en-US", { weekday: "short" })}
+              </div>
+              <span
+                className={`-mt-2 mx-auto flex items-center justify-center rounded-full ${isToday ? "bg-google-blue text-white dark:bg-[#a8c7fa] dark:text-[#062e6f]" : "text-google-gray-700 dark:text-[#e3e3e3]"}`}
+                style={{ width: "46px", height: "46px", fontSize: "26px", lineHeight: "46px", fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}
+              >
+                {currentDate.getDate()}
+              </span>
+            </h2>
+
+            {/* working-location row + all-day events (.s23), bottom-aligned */}
+            <div className="flex-1 min-w-0 flex flex-col justify-end gap-0.5 pb-1 pr-3">
               {allDayEvents.slice(0, 3).map((ev) => (
                 <div key={ev.id}
                   onClick={() => onEventClick?.(ev, undefined, undefined)}
@@ -131,11 +160,45 @@ function DayView({ onEventClick, onEventContextMenu, onGridClick, placeholder })
                 </div>
               ))}
               {dayHolidays.map((h) => <div key={h.id || h.name} className="text-[11px] text-google-green truncate">{h.name}</div>)}
+
+              {/* Add location (.s28 / .s29) — chip revealed on hover */}
+              <button
+                type="button"
+                aria-label="Add a working location"
+                className="group flex items-center self-start max-w-full"
+              >
+                <span className="flex items-center rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-[#e8f0fe] dark:bg-[#2f4c63] shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]" style={{ padding: "2px 8px" }}>
+                  <span className="flex items-center justify-center text-[#1a73e8] dark:text-[#4b99d2]">
+                    <svg focusable="false" viewBox="0 0 24 24" style={{ width: 12, height: 12, fill: "currentColor" }}>
+                      <path d="M20 1v3h3v2h-3v3h-2V6h-3V4h3V1h2zm-8 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm1-9.94v2.02A6.53 6.53 0 0 0 12 5c-3.35 0-6 2.57-6 6.2 0 2.34 1.95 5.44 6 9.14 4.05-3.7 6-6.79 6-9.14V11h2v.2c0 3.32-2.67 7.25-8 11.8-5.33-4.55-8-8.48-8-11.8C4 6.22 7.8 3 12 3c.34 0 .67.02 1 .06z" />
+                    </svg>
+                  </span>
+                  <span className="ml-1 mr-1 text-[11px] font-medium tracking-[0.3px] whitespace-nowrap select-none text-google-gray-700 dark:text-[#e3e3e3]">
+                    Add location
+                  </span>
+                </span>
+              </button>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* === Grid body (.s39) ================================================== */}
+      <div ref={scrollRef} className="flex overflow-auto flex-1">
+        {/* Time gutter (.s41 / .s43) — hour labels, right-aligned */}
+        <div className="bg-white dark:bg-[#131314]" style={{ width: `${GUTTER_W}px`, minWidth: `${GUTTER_W}px` }}>
+          {hours.map((h) => (
+            <div key={h} className="text-right pr-2 text-[11px] font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] flex items-start justify-end" style={{ height: `${HOUR_H}px`, fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>
+              <span className="-mt-[6px]">{h === 0 ? "" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Day area — horizontal lines (.s47/.s48) are full-width single
+            elements; the single day column is offset by RAIL_W (.s49). */}
+        <div className="flex-1 flex flex-col">
           {/* Hours */}
-          <div className="relative">
+          <div id="calendar-hours-top" className="relative border-t border-google-gray-200 dark:border-[#333537]">
             {/* Horizontal hour lines — single full-width elements (line + nub identical) */}
             <div className="absolute inset-0 pointer-events-none">
               {hours.map((h) => (

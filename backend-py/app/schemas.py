@@ -135,6 +135,52 @@ class UserPreferencesUpdate(BaseModel):
     working_hours_end: Optional[str] = None
 
 
+# ── Holidays ──────────────────────────────────────────────────────────────────
+
+class Country(BaseModel):
+    code: str
+    name: str
+
+
+class HolidayPreferenceIn(BaseModel):
+    country_code: str
+    region: Optional[str] = None
+    is_enabled: bool = True
+
+
+class HolidayPreferenceOut(BaseModel):
+    id: int
+    country_code: str
+    region: Optional[str] = None
+    is_enabled: bool
+
+    model_config = {"from_attributes": True}
+
+
+class HolidayOut(BaseModel):
+    id: str
+    name: str
+    date: str
+    country_code: str
+    country_name: str
+    type: str
+    is_national: bool
+
+
+# ── Notifications ─────────────────────────────────────────────────────────────
+
+class NotificationOut(BaseModel):
+    id: str
+    event_id: int
+    title: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    start_time: datetime
+    calendar_name: str
+    calendar_color: str
+    minutes_before: int
+
+
 # ── RL Environment ────────────────────────────────────────────────────────────
 
 class EnvState(BaseModel):

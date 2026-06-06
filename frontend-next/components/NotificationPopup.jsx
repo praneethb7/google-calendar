@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useCalendarStore } from "@/store/useCalendarStore";
+import client from "@/api/client";
 
 function NotificationPopup({ onClose }) {
   const { events, fetchMyInvitations, invitations, updateRsvp } =
@@ -17,12 +18,7 @@ function NotificationPopup({ onClose }) {
 
   const fetchReminders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications/pending', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!response.ok) return;
-      const reminders = await response.json();
+      const { data: reminders } = await client.get('/api/notifications/pending');
       const formatted = reminders.map((r) => ({
         id: r.id,
         title: r.title,

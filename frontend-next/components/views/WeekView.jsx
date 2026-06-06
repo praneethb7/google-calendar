@@ -1,14 +1,16 @@
 "use client";
-import React, { useMemo, useEffect, useState, useCallback } from "react";
+import React, { useMemo, useEffect, useState, useCallback, useRef } from "react";
 import { useDrop } from "react-dnd";
 import { useCalendarStore } from "@/store/useCalendarStore";
 import { useHolidayStore } from "@/store/useHolidayStore";
 import { DraggableEvent, ItemTypes } from "../DraggableEvent";
 import WorkingHoursOverlay from "../WorkingHoursOverlay";
 
-const HOUR_H = 50;
-const RAIL_W = 9;
-const BAND_H = 18;
+const HOUR_H = 48;       // .s54 / .s59 hour cell height
+const RAIL_W = 9;        // .s16 left rail; vertical lines sit at this x
+const BAND_H = 20;       // .s5 GMT band / header divider-stub band
+const HEADER_H = 102;    // .s2 week header height
+const NAME_H = 84;       // .s14 day-name row height
 const toLocalISO = (d) => {
   const dt = new Date(d);
   return new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString();
@@ -32,6 +34,22 @@ function WeekView({ onEventClick, onEventContextMenu, onGridClick, placeholder, 
   useEffect(() => { const iv = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(iv); }, []);
 
   const indicatorTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_H;
+
+  // The body grid scrolls vertically, so its day area is narrower than the
+  // (non-scrolling) header by the scrollbar width. Measure it and pull the
+  // header's nub grid in by the same amount so the nubs land on the body lines.
+  const scrollRef = useRef(null);
+  const [sbw, setSbw] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const el = scrollRef.current;
+      if (el) setSbw(el.offsetWidth - el.clientWidth);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   const tz = useMemo(() => {
     const off = -new Date().getTimezoneOffset();
     const s = off >= 0 ? "+" : "-", a = Math.abs(off);
@@ -107,75 +125,143 @@ function WeekView({ onEventClick, onEventContextMenu, onGridClick, placeholder, 
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden rounded-[28px]">
-      {/* Header — weekday name + date number only (no lines) */}
-      <div className="flex sticky top-0 z-20 bg-white dark:bg-[#131314]">
-        <div className="w-[80px] min-w-[80px]" />
-        <div className="flex-1 grid" style={colsStyle}>
-          {weekDays.map((day) => {
-            const isToday = now.toDateString() === day.toDateString();
-            return (
-              <div key={day} className="px-1 pt-2 pb-1 text-center">
-                <div className={`text-[11px] uppercase font-medium tracking-[0.8px] ${isToday ? "text-google-blue dark:text-[#a8c7fa]" : "text-google-gray-500 dark:text-[#c4c7c5]"}`}>
-                  {day.toLocaleDateString("en-US", { weekday: "short" })}
-                </div>
-                <div className="flex justify-center mt-1">
-                  <span className={`w-[46px] h-[46px] flex items-center justify-center rounded-full text-[26px] font-normal ${isToday ? "bg-google-blue text-white dark:bg-[#a8c7fa] dark:text-[#062e6f]" : "text-google-gray-700 dark:text-[#e3e3e3]"}`}>
+    <div className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden rounded-[28px]" style={{ paddingLeft: "8px" }}>
+      {/* === Week header (.s2 — 102px) ==========================================
+          gutter holds the GMT label pinned to the day-name row's bottom 20px
+          band (.s6 top:64). The day area carries the weekday/date headings, the
+          short divider stubs in that band, and a per-day working-location row. */}
+      <div
+        className="flex shrink-0 sticky top-0 z-20 bg-white dark:bg-[#131314]"
+        style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px` }}
+      >
+        {/* gutter (.s3) — GMT (.s7) in the bottom 20px band of the name row */}
+        <div className="relative shrink-0" style={{ width: "71px", minWidth: "71px" }}>
+          <div
+            className="absolute left-0 right-0 flex items-center justify-end pr-0.5"
+            style={{ top: `${NAME_H - BAND_H}px`, height: `${BAND_H}px` }}
+          >
+            <span className="text-[11px] leading-4 font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] whitespace-nowrap">
+              {tz}
+            </span>
+          </div>
+        </div>
+
+        {/* day area (.s8) */}
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          {/* vertical divider stubs (.s18–.s30) — bottom 20px of the header, so
+              they reach the body grid lines below. Same border structure as the
+              body columns (container border-l + per-cell border-r) so the nubs
+              sit exactly on those lines. */}
+          <div
+            className="absolute grid pointer-events-none border-l border-google-gray-200 dark:border-[#333537]"
+            style={{ ...colsStyle, top: `${HEADER_H - BAND_H}px`, bottom: 0, left: `${RAIL_W}px`, right: `${sbw}px` }}
+          >
+            {weekDays.map((day) => (
+              <div key={`stub-${day.toISOString()}`} className="border-r border-google-gray-200 dark:border-[#333537] last:border-r-0" />
+            ))}
+          </div>
+
+          {/* weekday + date row (.s14 — 84px) */}
+          <div className="grid" style={{ ...colsStyle, marginLeft: `${RAIL_W}px`, height: `${NAME_H}px` }}>
+            {weekDays.map((day) => {
+              const isToday = now.toDateString() === day.toDateString();
+              return (
+                <h2
+                  key={`name-${day.toISOString()}`}
+                  className="text-center"
+                  aria-label={day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                >
+                  <div className={`mt-0.5 text-[11px] font-medium uppercase leading-8 tracking-[0.8px] ${isToday ? "text-google-blue dark:text-[#a8c7fa]" : "text-google-gray-500 dark:text-[#c4c7c5]"}`}>
+                    {day.toLocaleDateString("en-US", { weekday: "short" })}
+                  </div>
+                  <span
+                    className={`-mt-1 mx-auto flex items-center justify-center rounded-full ${isToday ? "bg-google-blue text-white dark:bg-[#a8c7fa] dark:text-[#062e6f]" : "text-google-gray-700 dark:text-[#e3e3e3]"}`}
+                    style={{ width: "46px", height: "46px", fontSize: "26px", lineHeight: "46px", fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}
+                  >
                     {day.getDate()}
                   </span>
+                </h2>
+              );
+            })}
+          </div>
+
+          {/* working-location row + all-day events (.s31 / .s42) */}
+          <div className="grid flex-1 min-h-0" style={{ ...colsStyle, marginLeft: `${RAIL_W}px` }}>
+            {weekDays.map((day) => {
+              const allDay = (allDayByDay.get(day.toDateString()) || []).slice(0, 2);
+              const holidays = showHolidays ? getHolidaysForDate(day) || [] : [];
+              return (
+                <div key={`wl-${day.toISOString()}`} className="px-2 flex flex-col justify-end gap-0.5 pb-0.5 min-w-0">
+                  {allDay.map((ev) => (
+                    <div key={ev.id}
+                      onClick={() => onEventClick?.(ev, undefined, undefined)}
+                      onContextMenu={(e) => { e.preventDefault(); onEventContextMenu?.(ev, e.clientX, e.clientY); }}
+                      className="gc-event-chip px-1.5 py-0.5 rounded text-[11px] truncate text-white cursor-pointer hover:opacity-90"
+                      style={{ backgroundColor: ev.color || ev.calendar_color || "#1a73e8" }}>
+                      {ev.title}
+                    </div>
+                  ))}
+                  {holidays.map((h) => <div key={h.id || h.name} className="text-[11px] text-google-green truncate">{h.name}</div>)}
+
+                  {/* Add location (.s36 / .s37) — chip revealed on hover */}
+                  <button type="button" aria-label="Add a working location" className="group flex items-center self-start max-w-full">
+                    <span className="flex items-center rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-[#e8f0fe] dark:bg-[#2f4c63] shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]" style={{ padding: "2px 8px" }}>
+                      <span className="flex items-center justify-center text-[#1a73e8] dark:text-[#4b99d2]">
+                        <svg focusable="false" viewBox="0 0 24 24" style={{ width: 12, height: 12, fill: "currentColor" }}>
+                          <path d="M20 1v3h3v2h-3v3h-2V6h-3V4h3V1h2zm-8 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm1-9.94v2.02A6.53 6.53 0 0 0 12 5c-3.35 0-6 2.57-6 6.2 0 2.34 1.95 5.44 6 9.14 4.05-3.7 6-6.79 6-9.14V11h2v.2c0 3.32-2.67 7.25-8 11.8-5.33-4.55-8-8.48-8-11.8C4 6.22 7.8 3 12 3c.34 0 .67.02 1 .06z" />
+                        </svg>
+                      </span>
+                      <span className="ml-1 mr-1 text-[11px] font-medium tracking-[0.3px] whitespace-nowrap select-none text-google-gray-700 dark:text-[#e3e3e3]">
+                        Add location
+                      </span>
+                    </span>
+                  </button>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="flex overflow-auto flex-1">
-        {/* Time gutter: all-day band cell (with GMT) above the hour labels */}
-        <div className="w-[71px] min-w-[71px] bg-white dark:bg-[#131314]">
-          <div className="flex items-start justify-end pr-0.5 pt-1" style={{ minHeight: `${BAND_H}px` }}>
-            <span className="text-[11px] text-google-gray-500 dark:text-[#c4c7c5] font-medium tracking-[0.1px] whitespace-nowrap">{tz}</span>
-          </div>
+      {/* === Grid body (.s50) ================================================== */}
+      <div className="relative flex flex-1 min-h-0">
+        {/* Top scroll-shadow line with gradient "nub" fades at each end (.p2/.p3).
+            Spans the day+gutter area up to the scrollbar (right: sbw) so the nubs
+            land on the changed 4-/7-column ratio; 80px fades cap both ends. */}
+        <div
+          className="pointer-events-none absolute left-0 top-0 z-30"
+          style={{
+            right: `${sbw}px`,
+            height: "4px",
+            boxShadow:
+              "inset 0 1px 1px 0 rgba(0,0,0,0.14), inset 0 2px 1px -1px rgba(0,0,0,0.12)",
+          }}
+        >
+          <div
+            className="absolute left-0 top-0 bg-gradient-to-r from-white dark:from-[#131314] to-transparent"
+            style={{ width: "80px", height: "2px" }}
+          />
+          <div
+            className="absolute right-0 top-0 bg-gradient-to-l from-white dark:from-[#131314] to-transparent"
+            style={{ width: "80px", height: "2px" }}
+          />
+        </div>
+        <div ref={scrollRef} className="flex overflow-auto flex-1">
+        {/* Time gutter (.s52 / .s54) — hour labels, right-aligned */}
+        <div className="bg-white dark:bg-[#131314]" style={{ width: "71px", minWidth: "71px" }}>
           {hours.map((h) => (
-            <div key={h} className="text-right pr-2 text-[11px] font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] flex items-start justify-end" style={{ height: `${HOUR_H}px` }}>
+            <div key={h} className="text-right pr-2 text-[11px] font-medium tracking-[0.1px] text-google-gray-500 dark:text-[#c4c7c5] flex items-start justify-end" style={{ height: `${HOUR_H}px`, fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>
               <span className="-mt-[6px]">{h === 0 ? "" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`}</span>
             </div>
           ))}
         </div>
 
-        {/* Day area — starts right after the gutter. Horizontal lines (incl. the
-            left nub) are single full-width elements; columns are offset by RAIL_W
-            so the vertical lines sit RAIL_W px right of where the h-lines start. */}
+        {/* Day area — horizontal lines (.s58/.s59) are single full-width
+            elements; columns are offset by RAIL_W (.s60) so the vertical lines
+            sit RAIL_W px right of where the h-lines start. */}
         <div className="flex-1 flex flex-col">
-          {/* All-day band */}
-          <div className="relative" style={{ minHeight: `${BAND_H}px` }}>
-            {/* top divider — full width incl. nub */}
-            <div className="absolute left-0 right-0 bottom-0 border-b border-google-gray-200 dark:border-[#333537]" />
-            <div className="grid h-full border-l border-google-gray-200 dark:border-[#333537]" style={{ ...colsStyle, marginLeft: `${RAIL_W}px` }}>
-              {weekDays.map((day) => {
-                const allDay = (allDayByDay.get(day.toDateString()) || []).slice(0, 2);
-                const holidays = showHolidays ? getHolidaysForDate(day) || [] : [];
-                return (
-                  <div key={`ad-${day.toISOString()}`} className="px-1 py-0.5 flex flex-col gap-0.5 border-r border-google-gray-200 dark:border-[#333537] last:border-r-0">
-                    {allDay.map((ev) => (
-                      <div key={ev.id}
-                        onClick={() => onEventClick?.(ev, undefined, undefined)}
-                        onContextMenu={(e) => { e.preventDefault(); onEventContextMenu?.(ev, e.clientX, e.clientY); }}
-                        className="gc-event-chip px-1.5 py-0.5 rounded text-[11px] truncate text-white cursor-pointer hover:opacity-90"
-                        style={{ backgroundColor: ev.color || ev.calendar_color || "#1a73e8" }}>
-                        {ev.title}
-                      </div>
-                    ))}
-                    {holidays.map((h) => <div key={h.id || h.name} className="text-[11px] text-google-green truncate">{h.name}</div>)}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Hours */}
-          <div className="relative">
+          <div id="calendar-hours-top" className="relative border-t border-google-gray-200 dark:border-[#333537]">
             {/* Horizontal hour lines — single full-width elements (line + nub identical) */}
             <div className="absolute inset-0 pointer-events-none">
               {hours.map((h) => (
@@ -238,6 +324,7 @@ function WeekView({ onEventClick, onEventContextMenu, onGridClick, placeholder, 
               })}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

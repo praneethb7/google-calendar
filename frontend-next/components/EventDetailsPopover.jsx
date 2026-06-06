@@ -24,7 +24,7 @@ function HeaderButton({ icon, label, onClick, size = 40 }) {
 }
 
 function EventDetailsPopover({ event, x, y, onClose, onEdit }) {
-  const { calendars, deleteEvent, fetchEvents } = useCalendarStore();
+  const { calendars, deleteEvent } = useCalendarStore();
   const ref = useRef(null);
   const [pos, setPos] = useState({ left: x, top: y, ready: false });
 
@@ -71,7 +71,6 @@ function EventDetailsPopover({ event, x, y, onClose, onEdit }) {
       // still allow simple delete
     }
     await deleteEvent(event.id);
-    await fetchEvents?.();
     onClose();
   };
 

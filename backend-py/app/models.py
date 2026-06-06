@@ -84,6 +84,20 @@ class Reminder(Base):
     event = relationship("Event", back_populates="reminders")
 
 
+class HolidayPreference(Base):
+    __tablename__ = "holiday_preferences"
+    __table_args__ = (
+        UniqueConstraint("user_id", "country_code", name="uq_holiday_user_country"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    country_code = Column(String(2), nullable=False)
+    region = Column(String(100))
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class UserPreferences(Base):
     __tablename__ = "user_preferences"
 

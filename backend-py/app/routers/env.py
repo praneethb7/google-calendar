@@ -104,7 +104,7 @@ def step_env(body: schemas.EnvStepRequest, db: Session = Depends(get_db)):
 
     try:
         if action == "create_event":
-            if "calendar_id" not in payload:
+            if not payload.get("calendar_id"):
                 payload["calendar_id"] = _default_calendar_id(db)
             event_in = schemas.EventCreate(**payload)
             event = models.Event(
@@ -170,8 +170,16 @@ def step_env(body: schemas.EnvStepRequest, db: Session = Depends(get_db)):
                 state=_current_state(db),
             )
 
-    except HTTPException:
-        raise
+    except HTTPException as exc:
+        # Surface domain errors (e.g. event not found) as a failed step with a
+        # negative reward rather than an HTTP error, so the RL loop keeps running.
+        db.rollback()
+        return schemas.EnvStepResponse(
+            success=False,
+            action_taken=action,
+            message=str(exc.detail),
+            state=_current_state(db),
+        )
     except Exception as exc:
         db.rollback()
         return schemas.EnvStepResponse(

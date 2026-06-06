@@ -23,6 +23,7 @@ function CalendarHeader({
   const [showTrash, setShowTrash] = useState(false);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const helpMenuRef = useRef(null);
   const settingsDropdownRef = useRef(null);
 
@@ -98,6 +99,10 @@ function CalendarHeader({
     if (currentView === "day") newDate.setDate(newDate.getDate() - 1);
     else if (currentView === "week") newDate.setDate(newDate.getDate() - 7);
     else if (currentView === "month") newDate.setMonth(newDate.getMonth() - 1);
+    else if (currentView === "year") newDate.setFullYear(newDate.getFullYear() - 1);
+    else if (currentView === "4days") newDate.setDate(newDate.getDate() - 4);
+    else if (currentView === "schedule") newDate.setMonth(newDate.getMonth() - 1);
+    else newDate.setDate(newDate.getDate() - 1);
     setDate(newDate);
   };
 
@@ -106,6 +111,10 @@ function CalendarHeader({
     if (currentView === "day") newDate.setDate(newDate.getDate() + 1);
     else if (currentView === "week") newDate.setDate(newDate.getDate() + 7);
     else if (currentView === "month") newDate.setMonth(newDate.getMonth() + 1);
+    else if (currentView === "year") newDate.setFullYear(newDate.getFullYear() + 1);
+    else if (currentView === "4days") newDate.setDate(newDate.getDate() + 4);
+    else if (currentView === "schedule") newDate.setMonth(newDate.getMonth() + 1);
+    else newDate.setDate(newDate.getDate() + 1);
     setDate(newDate);
   };
 
@@ -140,80 +149,124 @@ function CalendarHeader({
 
   return (
     <>
-      <header className="flex items-center justify-between px-2 h-16 border-b border-google-gray-300 dark:border-transparent bg-white dark:bg-[#1b1b1b] transition-colors">
-        {/* Left Section */}
-        <div className="flex items-center">
-          {/* Brand cluster — fixed width so the Today pill begins exactly above
-              the main view (8px header padding + 248px = 256px sidebar width) */}
+      <header
+        className="flex items-center justify-between bg-white dark:bg-[#1b1b1b] transition-colors"
+        style={{ padding: "8px", minHeight: "64px" }}
+      >
+        {/* === Left section (s4): drawer + brand === */}
+        <div className="flex items-center" style={{ paddingRight: "25px" }}>
+          {/* Brand cluster — fixed width so the Today pill begins above the grid */}
           <div className="flex items-center w-[248px] min-w-[248px]">
+            {/* hamburger (s5): 48px circle, 12px padding */}
             <button
-              className="icon-button mx-2"
               title="Main menu"
+              aria-label="Main drawer"
               onClick={onToggleSidebar}
+              className="flex items-center justify-center shrink-0 rounded-full text-google-gray-700 dark:text-white hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+              style={{ width: "48px", height: "48px", margin: "0 4px", padding: "12px" }}
             >
-              <span className="material-icons-outlined">menu</span>
+              <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+              </svg>
             </button>
 
-            <div className="flex items-center ml-1">
+            {/* brand (s7/s9): logo 44x40 + "Calendar" 22px/48 */}
+            <div className="flex items-center" style={{ height: "48px" }}>
               <img
                 src={calendarIconUrl}
                 alt="Google Calendar"
-                className="w-11 h-10 object-contain"
+                style={{ width: "44px", height: "40px", paddingRight: "4px", marginBottom: "4px", objectFit: "contain" }}
               />
-              <span className="text-[22px] text-google-gray-700 dark:text-white ml-1 tracking-tight whitespace-nowrap hidden sm:block">
+              <span
+                className="text-google-gray-700 dark:text-white whitespace-nowrap hidden sm:block"
+                style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif', fontSize: "22px", lineHeight: "48px", paddingLeft: "4px" }}
+              >
                 Calendar
               </span>
             </div>
           </div>
 
           {activeApp !== "tasks" && (
-            <>
+            <div className="flex items-center">
+              {/* Today (s21): border #8e918f, radius 20px, 24px side padding */}
               <button
                 onClick={handleToday}
-                className="border border-google-gray-300 dark:border-[#8e918f] rounded-full px-6 py-2 text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] mr-5 transition-colors"
+                aria-label="Today"
+                className="flex items-center justify-center border border-google-gray-300 dark:border-[#8e918f] text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors"
+                style={{ minWidth: "64px", minHeight: "40px", paddingLeft: "24px", paddingRight: "24px", margin: "4px 20px 4px 0", borderRadius: "20px", fontSize: "14px", fontWeight: 500, fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}
               >
                 Today
               </button>
 
-              <div className="flex items-center -space-x-1">
-                <button
-                  onClick={handlePrevious}
-                  className="icon-button"
-                  title="Previous"
-                >
-                  <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_left</span>
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="icon-button"
-                  title="Next"
-                >
-                  <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_right</span>
-                </button>
-              </div>
+              {/* prev/next (s25): 32px circle, 4px padding, chevron 24px #c4c7c5 */}
+              <button
+                onClick={handlePrevious}
+                aria-label="Previous"
+                title="Previous"
+                className="flex items-center justify-center shrink-0 rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+                style={{ width: "32px", height: "32px", padding: "4px" }}
+              >
+                <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12l4.58-4.59z" />
+                </svg>
+              </button>
+              <button
+                onClick={handleNext}
+                aria-label="Next"
+                title="Next"
+                className="flex items-center justify-center shrink-0 rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+                style={{ width: "32px", height: "32px", padding: "4px" }}
+              >
+                <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6z" />
+                </svg>
+              </button>
 
-              <h1 className="text-[22px] leading-7 text-google-gray-700 dark:text-[#e3e3e3] ml-5 hidden md:block whitespace-nowrap" style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>
+              {/* date (s33): Google Sans 22px / 28px */}
+              <h1
+                className="text-google-gray-700 dark:text-[#e3e3e3] hidden md:block whitespace-nowrap"
+                style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif', fontSize: "22px", lineHeight: "28px", marginLeft: "8px" }}
+              >
                 {getDateDisplay()}
               </h1>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Right Section */}
-        <div className="flex items-center gap-1 pr-2" ref={helpMenuRef}>
+        {/* === Right section === */}
+        <div className="flex items-center" ref={helpMenuRef}>
+          {/* search (s37): 40px circle, material-icon 24px */}
           {activeApp !== "tasks" && (
-            <div className="hidden lg:block mr-2">
-              <SearchBar onEventClick={onEventClick} user={user} />
+            <div className="relative">
+              <button
+                aria-label="Search"
+                title="Search"
+                onClick={() => setShowSearch((p) => !p)}
+                className="flex items-center justify-center rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+                style={{ width: "40px", height: "40px", padding: "8px" }}
+              >
+                <span className="material-icons" style={{ fontSize: "24px" }}>search</span>
+              </button>
+              {showSearch && (
+                <div className="absolute right-0 top-[48px] z-50 bg-white dark:bg-[#2d2e2f] rounded-lg shadow-google-md border border-google-gray-200 dark:border-[#444746] p-2 animate-fadeIn">
+                  <SearchBar onEventClick={onEventClick} user={user} />
+                </div>
+              )}
             </div>
           )}
 
+          {/* help (s37): 40px circle */}
           <div className="relative">
             <button
-              className="icon-button"
+              className="flex items-center justify-center rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+              style={{ width: "40px", height: "40px", padding: "8px" }}
               title="Support"
+              aria-label="Support"
               onClick={() => setShowHelpMenu((prev) => !prev)}
             >
-              <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">help_outline</span>
+              <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+                <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" />
+              </svg>
             </button>
             {showHelpMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#2d2e2f] border border-google-gray-200 dark:border-[#444746] shadow-google-md py-2 rounded-lg z-50">
@@ -231,13 +284,18 @@ function CalendarHeader({
           </div>
 
           {activeApp !== "tasks" && (
-          <div className="relative" ref={settingsDropdownRef}>
+          <div className="relative" ref={settingsDropdownRef} style={{ marginLeft: "4px" }}>
             <button
               onClick={() => setShowSettingsDropdown((prev) => !prev)}
-              className="icon-button"
+              className="flex items-center justify-center rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+              style={{ width: "40px", height: "40px", padding: "8px" }}
               title="Settings menu"
+              aria-label="Settings menu"
             >
-              <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">settings</span>
+              <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+                <path d="M13.85 22.25h-3.7c-.74 0-1.36-.54-1.45-1.27l-.27-1.89c-.27-.14-.53-.29-.79-.46l-1.8.72c-.7.26-1.47-.03-1.81-.65L2.2 15.53c-.35-.66-.2-1.44.36-1.88l1.53-1.19c-.01-.15-.02-.3-.02-.46 0-.15.01-.31.02-.46l-1.52-1.19c-.59-.45-.74-1.26-.37-1.88l1.85-3.19c.34-.62 1.11-.9 1.79-.63l1.81.73c.26-.17.52-.32.78-.46l.27-1.91c.09-.7.71-1.25 1.44-1.25h3.7c.74 0 1.36.54 1.45 1.27l.27 1.89c.27.14.53.29.79.46l1.8-.72c.71-.26 1.48.03 1.82.65l1.84 3.18c.36.66.2 1.44-.36 1.88l-1.52 1.19c.01.15.02.3.02.46s-.01.31-.02.46l1.52 1.19c.56.45.72 1.23.37 1.86l-1.86 3.22c-.34.62-1.11.9-1.8.63l-1.8-.72c-.26.17-.52.32-.78.46l-.27 1.91c-.1.68-.72 1.22-1.46 1.22zm-3.23-2h2.76l.37-2.55.53-.22c.44-.18.88-.44 1.34-.78l.45-.34 2.38.96 1.38-2.4-2.03-1.58.07-.56c.03-.26.06-.51.06-.78s-.03-.53-.06-.78l-.07-.56 2.03-1.58-1.39-2.4-2.39.96-.45-.35c-.42-.32-.87-.58-1.33-.77l-.52-.22-.37-2.55h-2.76l-.37 2.55-.53.21c-.44.19-.88.44-1.34.79l-.45.33-2.38-.95-1.39 2.39 2.03 1.58-.07.56a7 7 0 0 0-.06.79c0 .26.02.53.06.78l.07.56-2.03 1.58 1.38 2.4 2.39-.96.45.35c.43.33.86.58 1.33.77l.53.22.38 2.55z" />
+                <circle cx="12" cy="12" r="3.5" />
+              </svg>
             </button>
             {showSettingsDropdown && (
               <div className="absolute left-0 top-[52px] w-[110px] bg-white dark:bg-[#1e1f20] border border-google-gray-200 dark:border-transparent shadow-google-md dark:shadow-[0_1px_2px_0_rgba(0,0,0,0.3),0_2px_6px_2px_rgba(0,0,0,0.15)] py-2 rounded z-50">
@@ -272,17 +330,16 @@ function CalendarHeader({
           </div>
           )}
 
-          {/* View Switcher Button */}
+          {/* View Switcher Button (s46): border #8e918f, radius 20px, 18px padding */}
           {activeApp !== "tasks" && (
-          <div className="relative ml-2 mr-2">
+          <div className="relative" style={{ marginLeft: "12px" }}>
             <button
-              className="flex items-center justify-between border border-google-gray-300 dark:border-[#8e918f] rounded-full px-[18px] h-[40px] min-w-[64px] hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors"
+              className="flex items-center justify-center border border-google-gray-300 dark:border-[#8e918f] text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors"
+              style={{ minWidth: "64px", minHeight: "40px", paddingLeft: "18px", paddingRight: "18px", margin: "4px 0", borderRadius: "20px", fontSize: "14px", fontWeight: 500, fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}
               onClick={() => setShowViewDropdown(!showViewDropdown)}
             >
-              <span className="text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] mr-2">
-                {currentViewLabel}
-              </span>
-              <span className="material-icons-outlined text-[18px] text-google-gray-700 dark:text-[#e3e3e3]">
+              <span>{currentViewLabel}</span>
+              <span className="material-icons" style={{ fontSize: "18px", marginLeft: "8px" }}>
                 arrow_drop_down
               </span>
             </button>
@@ -341,46 +398,70 @@ function CalendarHeader({
           </div>
           )}
 
-          {/* Calendar / Tasks segmented toggle */}
-          <div className="hidden sm:flex items-center ml-2">
+          {/* Calendar / Tasks segmented toggle (s50/s51/s55): pill ends, 20px svg */}
+          <div className="hidden sm:flex items-center" style={{ marginLeft: "12px" }}>
             <button
               onClick={() => onChangeApp("calendar")}
               title="Calendar"
-              className={`flex items-center justify-center w-[54px] h-[40px] rounded-l-full border border-google-gray-300 dark:border-[#8e918f] transition-colors ${
+              aria-label="Switch to Calendar"
+              className={`flex items-center justify-center border border-google-gray-300 dark:border-[#8e918f] transition-colors ${
                 activeApp === "calendar"
                   ? "bg-google-blue-light text-white dark:bg-[#004a77] dark:text-white"
                   : "text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-50 dark:hover:bg-[#37393b]"
               }`}
+              style={{ minHeight: "40px", paddingLeft: "18px", paddingRight: "14px", borderRadius: "9999px 0 0 9999px" }}
             >
-              <span className="material-icons-outlined text-[20px]">calendar_today</span>
+              <svg viewBox="0 -960 960 960" style={{ width: 20, height: 20, fill: "currentColor" }}>
+                <path d="M320-400q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm160 0q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm160 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z" />
+              </svg>
             </button>
             <button
               onClick={() => onChangeApp("tasks")}
               title="Tasks"
-              className={`flex items-center justify-center w-[54px] h-[40px] rounded-r-full border border-l-0 border-google-gray-300 dark:border-[#8e918f] transition-colors ${
+              aria-label="Switch to Tasks"
+              className={`flex items-center justify-center border border-l-0 border-google-gray-300 dark:border-[#8e918f] transition-colors ${
                 activeApp === "tasks"
                   ? "bg-google-blue-light text-white dark:bg-[#004a77] dark:text-white"
                   : "text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-50 dark:hover:bg-[#37393b]"
               }`}
+              style={{ minHeight: "40px", paddingLeft: "14px", paddingRight: "18px", borderRadius: "0 9999px 9999px 0" }}
             >
-              <span className="material-icons-outlined text-[20px]">task_alt</span>
+              <svg viewBox="0 -960 960 960" style={{ width: 20, height: 20, fill: "currentColor" }}>
+                <path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q65 0 123 19t107 53l-58 59q-38-24-81-37.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160q133 0 226.5-93.5T800-480q0-18-2-36t-6-35l65-65q11 32 17 66t6 70q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-216L254-466l56-56 114 114 400-401 56 56-456 457Z" />
+              </svg>
             </button>
           </div>
 
-          <button className="icon-button ml-2" title="Google apps">
-            <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">apps</span>
+          {/* Google apps (s61): 40px circle, 24px svg */}
+          <button
+            className="flex items-center justify-center rounded-full text-google-gray-700 dark:text-white hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors"
+            style={{ width: "40px", height: "40px", padding: "8px", marginLeft: "4px" }}
+            title="Google apps"
+            aria-label="Google apps"
+          >
+            <svg viewBox="0 0 24 24" style={{ width: 24, height: 24, fill: "currentColor" }}>
+              <path d="M6,8c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM12,20c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM6,20c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM6,14c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM12,14c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM16,6c0,1.1 0.9,2 2,2s2,-0.9 2,-2 -0.9,-2 -2,-2 -2,0.9 -2,2zM12,8c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM18,14c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM18,20c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2z" />
+            </svg>
           </button>
 
-          {/* Google account pill */}
-          <div className="flex items-center gap-2 border border-google-gray-300 dark:border-[#e3e3e3] rounded-full pl-3 pr-1 py-[3px] ml-2 hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors cursor-pointer">
-            <span className="bg-white rounded-[6px] px-1.5 py-1 flex items-center select-none">
+          {/* Google account pill (s62): border #e3e3e3, radius 28px, 48px tall */}
+          <div
+            className="flex items-center border border-google-gray-300 dark:border-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors cursor-pointer"
+            style={{ height: "48px", borderRadius: "28px", paddingLeft: "16px", paddingRight: "4px", paddingTop: "7px", marginLeft: "10px", marginRight: "4px" }}
+          >
+            {/* Google logo box (s63): white, radius 6px */}
+            <span className="bg-white flex items-center select-none" style={{ borderRadius: "6px", padding: "2px" }}>
               <img
                 src="https://www.google.com/u/0/ac/images/logo.gif?uid=102332194607365647406&service=google_gsuite"
                 alt="Google"
-                className="h-5 w-auto"
+                style={{ height: "24px", width: "74px", maxWidth: "74px", objectFit: "contain" }}
               />
             </span>
-            <span className="bg-[#1a73e8] text-white rounded-full w-8 h-8 flex items-center justify-center text-base font-medium select-none">
+            {/* avatar (s67/s68): 32px circle */}
+            <span
+              className="bg-[#1a73e8] text-white flex items-center justify-center font-medium select-none"
+              style={{ width: "32px", height: "32px", borderRadius: "9999px", marginLeft: "9px", fontSize: "16px" }}
+            >
               {(user?.name || user?.email || "P").charAt(0).toUpperCase()}
             </span>
           </div>
@@ -392,6 +473,14 @@ function CalendarHeader({
         <div
           className="fixed inset-0 z-40"
           onClick={() => setShowViewDropdown(false)}
+        />
+      )}
+
+      {/* Invisible backdrop to dismiss Search popover */}
+      {showSearch && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowSearch(false)}
         />
       )}
 

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { holidaysAPI } from "@/api/holidays";
+import { useHolidayStore } from "@/store/useHolidayStore";
 
 function HolidaySettings({ isOpen, onClose }) {
   const [preferences, setPreferences] = useState([]);
@@ -7,6 +9,7 @@ function HolidaySettings({ isOpen, onClose }) {
   const [loading, setLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
+  const refreshHolidays = useHolidayStore((s) => s.fetchPreferences);
 
   useEffect(() => {
     if (isOpen) {
@@ -17,27 +20,12 @@ function HolidaySettings({ isOpen, onClose }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-
-      // Load supported countries
-      const countriesRes = await fetch(
-        "http://localhost:5000/api/holidays/countries",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const countriesData = await countriesRes.json();
-      setCountries(countriesData.countries || []);
-
-      // Load user preferences
-      const prefsRes = await fetch(
-        "http://localhost:5000/api/holidays/preferences",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const prefsData = await prefsRes.json();
-      setPreferences(prefsData.preferences || []);
+      const [countriesData, prefsData] = await Promise.all([
+        holidaysAPI.getCountries(),
+        holidaysAPI.getPreferences(),
+      ]);
+      setCountries(countriesData || []);
+      setPreferences(prefsData || []);
     } catch (error) {
       console.error("Failed to load holiday data:", error);
     } finally {
@@ -45,57 +33,29 @@ function HolidaySettings({ isOpen, onClose }) {
     }
   };
 
+  const savePreference = async (countryCode, region, isEnabled) => {
+    try {
+      await holidaysAPI.upsertPreference({
+        country_code: countryCode,
+        region: region || null,
+        is_enabled: isEnabled,
+      });
+      await loadData();
+      await refreshHolidays(); // refresh badges across the calendar
+    } catch (error) {
+      console.error("Failed to save preference:", error);
+    }
+  };
+
   const handleAddPreference = async () => {
     if (!selectedCountry) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://localhost:5000/api/holidays/preferences",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            countryCode: selectedCountry,
-            region: selectedRegion || null,
-            isEnabled: true,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        loadData();
-        setSelectedCountry("");
-        setSelectedRegion("");
-      }
-    } catch (error) {
-      console.error("Failed to add preference:", error);
-    }
+    await savePreference(selectedCountry, selectedRegion, true);
+    setSelectedCountry("");
+    setSelectedRegion("");
   };
 
-  const handleTogglePreference = async (pref) => {
-    try {
-      const token = localStorage.getItem("token");
-      await fetch("http://localhost:5000/api/holidays/preferences", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          countryCode: pref.countryCode,
-          region: pref.region,
-          isEnabled: !pref.isEnabled,
-        }),
-      });
-      loadData();
-    } catch (error) {
-      console.error("Failed to toggle preference:", error);
-    }
-  };
+  const handleTogglePreference = (pref) =>
+    savePreference(pref.country_code, pref.region, !pref.is_enabled);
 
   if (!isOpen) return null;
 
@@ -179,15 +139,15 @@ function HolidaySettings({ isOpen, onClose }) {
                         <div className="flex items-center gap-3">
                           <input
                             type="checkbox"
-                            checked={pref.isEnabled}
+                            checked={pref.is_enabled}
                             onChange={() => handleTogglePreference(pref)}
                             className="w-4 h-4 text-blue-600 rounded"
                           />
                           <div>
                             <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
                               {countries.find(
-                                (c) => c.code === pref.countryCode
-                              )?.name || pref.countryCode}
+                                (c) => c.code === pref.country_code
+                              )?.name || pref.country_code}
                             </div>
                             {pref.region && (
                               <div className="text-xs text-gray-500 dark:text-gray-400">

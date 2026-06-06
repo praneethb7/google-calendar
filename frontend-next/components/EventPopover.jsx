@@ -711,7 +711,7 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
       ? grid.getBoundingClientRect()
       : { left: 0, width: window.innerWidth };
     return {
-      left: Math.max(20, area.left + (area.width - 707) / 2),
+      left: Math.max(20, area.left + (area.width - 699) / 2),
       top: Math.max(20, window.innerHeight * 0.18),
     };
   });
@@ -729,12 +729,19 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
   // Notify parent of time changes
   useEffect(() => { onTimeChange?.(startTime, endTime); }, [startTime, endTime]);
 
-  // Auto-set title for certain tabs
+  // Auto-set title for every tab — reset each time a tab is (re)entered, so the
+  // placeholder/title always reflects the current tab. The first run (mount) is
+  // skipped so an edited event's existing title is preserved.
+  const didMountTabRef = useRef(false);
   useEffect(() => {
-    if (activeTab === "Out of office" && !title) setTitle("Out of office");
-    if (activeTab === "Focus time" && !title) setTitle("Focus time");
-    // Working location title is static & non-editable
-    if (activeTab === "Working location") setTitle("Working location");
+    if (!didMountTabRef.current) {
+      didMountTabRef.current = true;
+      return;
+    }
+    if (activeTab === "Out of office") setTitle("Out of office");
+    else if (activeTab === "Focus time") setTitle("Focus time");
+    else if (activeTab === "Working location") setTitle("Working location");
+    else setTitle(""); // Event, Task, Appointment schedule → blank "Add title"
   }, [activeTab]);
 
   // Notify parent of tab changes (so the grid placeholder can restyle)
@@ -760,7 +767,11 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
       ? grid.getBoundingClientRect()
       : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
     const left = area.left + (area.width - rect.width) / 2;
-    const top = area.top + (area.height - rect.height) / 2;
+    // Vertically, start the card 2px above the first horizontal hour line.
+    const hoursTop = document.getElementById("calendar-hours-top");
+    const top = hoursTop
+      ? hoursTop.getBoundingClientRect().top - 10
+      : area.top + (area.height - rect.height) / 2;
     setPos({
       left: Math.max(20, Math.min(left, window.innerWidth - rect.width - 20)),
       top: Math.max(20, Math.min(top, window.innerHeight - rect.height - 20)),
@@ -877,7 +888,7 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
 
       <div
         ref={popoverRef}
-        className="fixed z-50 bg-white dark:bg-[#1e1f20] rounded-[28px] shadow-[0_3px_4px_rgba(0,0,0,0.14),0_3px_3px_-2px_rgba(0,0,0,0.12),0_1px_8px_rgba(0,0,0,0.2)] w-[707px] max-w-[calc(100vw-40px)] flex flex-col font-sans animate-fadeIn"
+        className="fixed z-50 bg-white dark:bg-[#1e1f20] rounded-[28px] shadow-[0_3px_4px_rgba(0,0,0,0.14),0_3px_3px_-2px_rgba(0,0,0,0.12),0_1px_8px_rgba(0,0,0,0.2)] w-[699px] h-[513px] min-h-[513px] max-w-[calc(100vw-40px)] flex flex-col font-sans animate-fadeIn"
         style={{ left: pos.left, top: pos.top, maxHeight: "calc(100vh - 40px)" }}
       >
         {/* ── Close ─────────────────────────────────────────────────────── */}
@@ -914,7 +925,7 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
-                className="w-full text-[22px] leading-7 font-normal text-gray-900 dark:text-[#e3e3e3] placeholder-gray-500 dark:placeholder-[#9aa0a6] border-b border-gray-300 dark:border-[#5f6368] focus:outline-none bg-transparent pb-1"
+                className="w-full text-[22px] leading-7 font-normal text-gray-900 dark:text-[#e3e3e3] placeholder-gray-500 dark:placeholder-[#9aa0a6] border-b border-gray-300 dark:border-[#5f6368] focus:border-b-2 focus:border-[#8ab4f8] dark:focus:border-[#8ab4f8] focus:outline-none bg-transparent pb-1 focus:pb-[3px]"
                 style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}
                 autoFocus
               />
@@ -943,26 +954,28 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
 
             {/* ─── Time row (all tabs except Appointment schedule) ────── */}
             {(activeTab === "Event" || activeTab === "Task" || activeTab === "Out of office" || activeTab === "Focus time" || activeTab === "Working location") && (
-              <div className="flex mt-2 mb-2 py-1 -mx-2 px-2">
-                <span className="material-icons-outlined w-[52px] shrink-0 text-center text-gray-400 dark:text-[#c4c7c5] text-[20px] leading-10">schedule</span>
+              <div className={`flex ${eventTimeExpanded ? "items-start" : "items-center"}`}>
+                <span className={`material-icons-outlined w-[52px] shrink-0 text-center text-gray-400 dark:text-[#c4c7c5] text-[20px] ${eventTimeExpanded ? "leading-10" : ""}`}>schedule</span>
                 {!eventTimeExpanded ? (
                   <button
                     type="button"
                     onClick={() => setEventTimeExpanded(true)}
-                    className="flex-1 min-w-0 text-left rounded-md px-3 py-3 hover:bg-gray-100 dark:hover:bg-[#282b2c] transition-colors"
+                    className="flex-1 min-w-0 min-h-[52px] text-left rounded px-2 pt-2 pb-2 hover:bg-gray-100 dark:hover:bg-[#282b2c] transition-colors"
                   >
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] leading-5 text-gray-900 dark:text-[#e3e3e3]">
                       <span>{fmtDate(startTime)}</span>
                       {!isAllDay && (
                         <span>
                           {fmt12(startTime)}
-                          <span className="mx-2 text-gray-500 dark:text-[#c4c7c5]">-</span>
+                          <span className="mx-2 text-gray-500 dark:text-[#c4c7c5]">–</span>
                           {fmt12(endTime)}
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 text-[13px] leading-5 text-gray-500 dark:text-[#c4c7c5]">
-                      Time zone <span className="px-1">·</span> {recurrenceLabel}
+                    <div className="flex items-center text-[12px] leading-4 text-gray-500 dark:text-[#c4c7c5]">
+                      <span>Time zone</span>
+                      <span className="px-1 font-bold">·</span>
+                      <span>{recurrenceLabel}</span>
                     </div>
                   </button>
                 ) : (
@@ -1267,7 +1280,9 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
                   </div>
                 ) : (
                   <div className="flex items-center min-h-[40px] cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg" onClick={() => setMeetLink(`meet.google.com/${generateMeetCode()}`)}>
-                    <span className="material-icons w-[52px] shrink-0 text-center text-[#1a73e8] text-[20px]">videocam</span>
+                    <span className="w-[52px] shrink-0 flex justify-center">
+                      <img src="https://www.gstatic.com/images/branding/productlogos/meet_2026/v2/web/192px.svg" alt="" className="w-5 h-5" />
+                    </span>
                     <span className="text-gray-600 dark:text-[#c4c7c5] text-[14px]">Add Google Meet video conferencing</span>
                   </div>
                 )}
@@ -1277,22 +1292,23 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
                   {showLocation ? (
                     <input type="text" placeholder="Add rooms or location" value={location} onChange={(e) => setLocation(e.target.value)} onClick={(e) => e.stopPropagation()} autoFocus
                       className="flex-1 bg-gray-100 dark:bg-[#3c4043] text-[14px] focus:outline-none placeholder-gray-500 dark:placeholder-[#9aa0a6] text-gray-900 dark:text-[#e3e3e3] rounded-t px-4 py-2.5 border-b-2 border-[#8ab4f8] mr-2" />
-                  ) : <span className="text-gray-600 dark:text-[#c4c7c5] text-[14px]">Add rooms or location</span>}
+                  ) : (
+                    <span className="text-gray-600 dark:text-[#c4c7c5] text-[14px]">
+                      Add <span className="cursor-pointer hover:underline">rooms</span> or <span className="cursor-pointer hover:underline">location</span>
+                    </span>
+                  )}
                 </div>
-                {/* Description */}
-                <div className="flex items-center min-h-[40px] cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg" onClick={() => !showDescription && setShowDescription(true)}>
+                {/* Description / Drive attachment (combined) */}
+                <div className="flex items-start min-h-[40px] hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg">
                   <span className="material-icons-outlined w-[52px] shrink-0 text-center text-gray-400 dark:text-[#c4c7c5] text-[20px] self-start mt-2.5">notes</span>
                   {showDescription ? (
                     <textarea placeholder="Add description" value={description} onChange={(e) => setDescription(e.target.value)} onClick={(e) => e.stopPropagation()} rows={2} autoFocus
                       className="flex-1 bg-gray-100 dark:bg-[#3c4043] text-[14px] focus:outline-none placeholder-gray-500 dark:placeholder-[#9aa0a6] text-gray-900 dark:text-[#e3e3e3] rounded-t px-4 py-2.5 border-b-2 border-[#8ab4f8] resize-none mr-2 my-1" />
-                  ) : <span className="text-gray-600 dark:text-[#c4c7c5] text-[14px]">Add description</span>}
-                </div>
-                {/* Drive attachment */}
-                <div className="flex items-center min-h-[40px] cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg" onClick={openDrive}>
-                  <span className="w-[52px] shrink-0 flex justify-center">
-                    <DriveIcon />
-                  </span>
-                  <span className="text-[14px] font-medium text-[#1a73e8] dark:text-[#a8c7fa]" style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>Add a Google Drive attachment</span>
+                  ) : (
+                    <span className="flex-1 text-gray-600 dark:text-[#c4c7c5] text-[14px] leading-10">
+                      Add <span className="cursor-pointer hover:underline" onClick={() => setShowDescription(true)}>description</span> or <span className="cursor-pointer hover:underline" onClick={openDrive}>a Google Drive attachment</span>
+                    </span>
+                  )}
                 </div>
               </>
             )}
@@ -1672,8 +1688,8 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
             {activeTab !== "Out of office" && (() => {
               const noSubtitle = activeTab === "Working location" || activeTab === "Appointment schedule";
               return (
-                <div className="flex items-center min-h-[44px] mt-1">
-                  <span className={`material-icons-outlined w-[52px] shrink-0 text-center text-gray-400 dark:text-[#c4c7c5] text-[20px] ${noSubtitle ? "" : "self-start mt-3"}`}>calendar_today</span>
+                <div className="flex items-center min-h-[52px]">
+                  <span className={`material-icons-outlined w-[52px] shrink-0 text-center text-gray-400 dark:text-[#c4c7c5] text-[20px] ${noSubtitle ? "" : "self-start mt-3"}`}>{activeTab === "Event" ? "event" : "calendar_today"}</span>
                   <div>
                     <div className="flex items-center gap-2 text-[14px] text-gray-800 dark:text-[#e3e3e3]">
                       {calendars[0]?.name || "My Calendar"}
@@ -1682,9 +1698,16 @@ function EventPopover({ x, y, initialDate, editEvent, onClose, onMoreOptions, on
                       )}
                     </div>
                     {!noSubtitle && (
-                      <div className="text-[12px] leading-4 text-gray-500 dark:text-[#c4c7c5]">
-                        {activeTab === "Task" ? "Free \u00b7 Private \u00b7 Do not disturb is OFF"
-                          : "Busy \u00b7 Default visibility \u00b7 Notify 10 minutes before"}
+                      <div className="flex items-center text-[12px] leading-4 text-gray-500 dark:text-[#c4c7c5]">
+                        {(activeTab === "Task"
+                          ? ["Free", "Private", "Do not disturb is OFF"]
+                          : ["Busy", "Default visibility", "Notify 10 minutes before"]
+                        ).map((item, i, arr) => (
+                          <span key={item} className="flex items-center">
+                            <span>{item}</span>
+                            {i < arr.length - 1 && <span className="px-1 font-bold">\u00b7</span>}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>

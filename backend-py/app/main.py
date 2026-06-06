@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, SessionLocal, Base
 from app import models  # noqa: F401 – registers all models with Base
 from app.seed import seed_default_user
-from app.routers import calendars, events, env, profile
+from app.routers import calendars, events, env, profile, holidays, notifications
 
 # ── Create tables ─────────────────────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
@@ -32,6 +32,8 @@ app.include_router(calendars.router)
 app.include_router(events.router)
 app.include_router(env.router)
 app.include_router(profile.router)
+app.include_router(holidays.router)
+app.include_router(notifications.router)
 
 
 @app.get("/health")

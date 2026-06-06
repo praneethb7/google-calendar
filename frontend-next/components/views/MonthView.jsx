@@ -70,18 +70,39 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden rounded-[28px] border-l border-google-gray-200 dark:border-[#333537]">
-      {/* Weekday header */}
-      <div className="grid grid-cols-7">
+    // Outer box (.s1): 1232px max-width 100%, min-height 717px, 8px left margin,
+    // 28px radius, left border #333537, Google Sans Text
+    <div
+      className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden border-l border-google-gray-200 dark:border-[#333537]"
+      style={{
+        width: "1232px",
+        maxWidth: "100%",
+        minHeight: "717px",
+        marginLeft: "8px",
+        borderRadius: "28px",
+        fontFamily: '"Google Sans Text", "Google Sans", Helvetica, Arial, sans-serif',
+        fontSize: "14px",
+        fontWeight: 400,
+      }}
+    >
+      {/* Weekday header (.s2): 28px tall, -8px bottom margin, cells pad-top 7px */}
+      <div className="grid grid-cols-7" style={{ marginBottom: "-8px" }}>
         {weekDays.map((day, i) => (
-          <div key={day} className={`pt-[7px] pb-1 text-center text-[11px] font-medium leading-5 uppercase text-google-gray-500 dark:text-[#c4c7c5] border-r border-google-gray-200 dark:border-[#333537] ${i === 6 ? "border-r-0" : ""}`}>
-            {day}
+          <div
+            key={day}
+            className={`flex justify-center items-start pt-[7px] text-center uppercase border-r border-google-gray-200 dark:border-[#333537] ${i === 6 ? "border-r-0" : ""}`}
+            style={{ minHeight: "28px" }}
+          >
+            {/* (.s5): 11px / 500 / 20px line-height, #c4c7c5 */}
+            <span className="text-google-gray-500 dark:text-[#c4c7c5]" style={{ fontSize: "11px", fontWeight: 500, lineHeight: "20px" }}>
+              {day}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Month grid */}
-      <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(0, 1fr))` }}>
+      {/* Month grid (.s7): week rows (.s8) are 139px tall, bottom border #333537 */}
+      <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(139px, 1fr))` }}>
         {days.map((day, index) => {
           const dayEvents = getEventsForDay(day.date);
           const dayHolidays = getHolidaysForDay(day.date);
@@ -96,7 +117,7 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
           return (
             <div
               key={index}
-              className={`relative flex flex-col p-1 border-b border-google-gray-200 dark:border-[#333537] bg-white dark:bg-[#131314] min-h-[100px] cursor-pointer ${col === 6 ? "" : "border-r border-google-gray-200 dark:border-[#333537]"}`}
+              className={`relative flex flex-col p-1 border-b border-google-gray-200 dark:border-[#333537] bg-white dark:bg-[#131314] min-h-[139px] cursor-pointer ${col === 6 ? "" : "border-r border-google-gray-200 dark:border-[#333537]"}`}
               onClick={(e) => {
                 // Ensure we don't trigger if the user clicked an event bubble
                 if (e.target.closest('.event-bubble') || e.target.closest('.holiday-bubble')) return;
@@ -107,16 +128,19 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
                 if (onGridClick) onGridClick(popDate, e.clientX, e.clientY);
               }}
             >
-              {/* Date number */}
-              <div className="flex justify-center mt-1">
+              {/* Date number (.s13): block, text-align center, line-height 30px */}
+              <div className="text-center" style={{ lineHeight: "16px" }}>
+                {/* (.s14 other month / .s15 current month): inline-block, min-width 24px,
+                    margin 8px top / 9.96px bottom, 12px / 500 / 16px, 0.3px tracking */}
                 <span
-                  className={`h-6 min-w-[24px] px-1.5 inline-flex items-center justify-center text-xs font-medium tracking-[0.3px] rounded-full cursor-pointer transition-colors ${
+                  className={`inline-block min-w-[24px] text-center rounded-full cursor-pointer transition-colors select-none ${
                     today
                       ? "bg-google-blue text-white dark:bg-[#004a77] dark:text-[#c2e7ff]"
                       : day.isCurrentMonth
                       ? "text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-100 dark:hover:bg-[#2a2b2d]"
                       : "text-google-gray-400 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#2a2b2d]"
                   }`}
+                  style={{ marginTop: "0px", marginBottom: "9.96px", fontSize: "12px", fontWeight: 500, lineHeight: "25px", letterSpacing: "0.3px", whiteSpace: "nowrap" }}
                 >
                   {dateLabel}
                 </span>
@@ -138,7 +162,7 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
                   .slice(0, maxDisplayItems - dayHolidays.length)
                   .map((event) => {
                     const color =
-                      event.color || event.calendar_color || "#1a73e8";
+                      event.color || event.calendar_color || "#4b99d2";
                     return (
                       <div
                         key={event.id}
