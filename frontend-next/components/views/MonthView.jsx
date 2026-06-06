@@ -38,7 +38,8 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
       });
     }
 
-    const remainingDays = 42 - days.length;
+    const totalCells = Math.ceil(days.length / 7) * 7;
+    const remainingDays = totalCells - days.length;
     for (let i = 1; i <= remainingDays; i++) {
       days.push({
         date: new Date(year, month + 1, i),
@@ -69,29 +70,33 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-[#202124] overflow-hidden rounded-lg">
+    <div className="h-full flex flex-col bg-white dark:bg-[#131314] overflow-hidden rounded-[28px] border-l border-google-gray-200 dark:border-[#333537]">
       {/* Weekday header */}
-      <div className="grid grid-cols-7 border-b border-google-gray-200 dark:border-gray-700">
-        {weekDays.map((day) => (
-          <div key={day} className="py-2 text-center text-[11px] font-medium uppercase text-google-gray-500 dark:text-gray-400">
+      <div className="grid grid-cols-7">
+        {weekDays.map((day, i) => (
+          <div key={day} className={`pt-[7px] pb-1 text-center text-[11px] font-medium leading-5 uppercase text-google-gray-500 dark:text-[#c4c7c5] border-r border-google-gray-200 dark:border-[#333537] ${i === 6 ? "border-r-0" : ""}`}>
             {day}
           </div>
         ))}
       </div>
 
       {/* Month grid */}
-      <div className="grid grid-cols-7 grid-rows-6 flex-1 border-l border-google-gray-200 dark:border-gray-700">
+      <div className="grid grid-cols-7 flex-1" style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(0, 1fr))` }}>
         {days.map((day, index) => {
           const dayEvents = getEventsForDay(day.date);
           const dayHolidays = getHolidaysForDay(day.date);
           const totalItems = dayEvents.length + dayHolidays.length;
           const maxDisplayItems = 4;
           const today = isToday(day.date);
+          const col = index % 7;
+          const dateLabel = day.date.getDate() === 1
+            ? `${day.date.toLocaleDateString("en-US", { month: "short" })} 1`
+            : day.date.getDate();
 
           return (
             <div
               key={index}
-              className="relative flex flex-col p-1 border-r border-b border-google-gray-200 dark:border-gray-700 bg-white dark:bg-[#202124] min-h-[100px] cursor-pointer"
+              className={`relative flex flex-col p-1 border-b border-google-gray-200 dark:border-[#333537] bg-white dark:bg-[#131314] min-h-[100px] cursor-pointer ${col === 6 ? "" : "border-r border-google-gray-200 dark:border-[#333537]"}`}
               onClick={(e) => {
                 // Ensure we don't trigger if the user clicked an event bubble
                 if (e.target.closest('.event-bubble') || e.target.closest('.holiday-bubble')) return;
@@ -103,17 +108,17 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
               }}
             >
               {/* Date number */}
-              <div className="flex justify-center mb-1 mt-1">
+              <div className="flex justify-center mt-1">
                 <span
-                  className={`w-6 h-6 flex items-center justify-center text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                  className={`h-6 min-w-[24px] px-1.5 inline-flex items-center justify-center text-xs font-medium tracking-[0.3px] rounded-full cursor-pointer transition-colors ${
                     today
-                      ? "bg-google-blue text-white hover:bg-google-blue-dark"
+                      ? "bg-google-blue text-white dark:bg-[#004a77] dark:text-[#c2e7ff]"
                       : day.isCurrentMonth
-                      ? "text-google-gray-700 dark:text-gray-200 hover:bg-google-gray-100 dark:hover:bg-gray-700"
-                      : "text-google-gray-400 dark:text-gray-600 hover:bg-google-gray-100 dark:hover:bg-gray-700"
+                      ? "text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-100 dark:hover:bg-[#2a2b2d]"
+                      : "text-google-gray-400 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#2a2b2d]"
                   }`}
                 >
-                  {day.date.getDate()}
+                  {dateLabel}
                 </span>
               </div>
 
@@ -141,7 +146,7 @@ function MonthView({ onEventClick, onEventContextMenu, onGridClick, placeholder 
                         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onEventContextMenu?.(event, e.clientX, e.clientY); }}
                         title={event.title}
                         className={`event-bubble truncate text-xs cursor-pointer hover:opacity-90 transition-opacity ${
-                          event.is_all_day ? "pl-2 pr-1 py-[2px] rounded text-white" : "flex items-center gap-1 py-[2px]"
+                          event.is_all_day ? "gc-event-chip pl-2 pr-1 py-[2px] rounded text-white" : "flex items-center gap-1 py-[2px]"
                         }`}
                         style={{ backgroundColor: event.is_all_day ? color : "transparent" }}
                       >

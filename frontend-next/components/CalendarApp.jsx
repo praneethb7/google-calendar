@@ -155,6 +155,13 @@ function CalendarApp() {
     setPlaceholder((p) => (p ? { ...p, start, end } : p));
   }, []);
 
+  // Popover tab changes → restyle placeholder blob (e.g. Working location)
+  const handlePopoverTabChange = useCallback((tab) => {
+    setPlaceholder((p) =>
+      p ? { ...p, variant: tab === "Working location" ? "working" : null } : p
+    );
+  }, []);
+
   // Popover saved → remove placeholder (real event takes over)
   const handlePopoverSaved = useCallback(() => {
     setPlaceholder(null);
@@ -179,7 +186,7 @@ function CalendarApp() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="flex flex-col h-screen w-full bg-white dark:bg-[#202124] overflow-hidden text-google-gray-900 dark:text-gray-100">
+      <div className="flex flex-col h-screen w-full bg-white dark:bg-[#1b1b1b] overflow-hidden text-google-gray-900 dark:text-gray-100">
         <CalendarHeader
           onCreateEvent={handleCreateEvent}
           onLogout={() => {}}
@@ -190,8 +197,8 @@ function CalendarApp() {
           onToggleSidebar={() => setShowSidebar(!showSidebar)}
         />
 
-        <div className="flex flex-1 overflow-hidden h-full">
-          {showSidebar && <CalendarSidebar onCreateEvent={handleCreateEvent} />}
+        <div className="relative flex flex-1 overflow-hidden h-full">
+          <CalendarSidebar onCreateEvent={handleCreateEvent} collapsed={!showSidebar} />
           <CalendarView
             onEventClick={handleEventClick}
             onEventContextMenu={handleEventContextMenu}
@@ -234,6 +241,7 @@ function CalendarApp() {
             onMoreOptions={handlePopoverMoreOptions}
             onTitleChange={handlePopoverTitleChange}
             onTimeChange={handlePopoverTimeChange}
+            onTabChange={handlePopoverTabChange}
             onSaved={handlePopoverSaved}
           />
         )}

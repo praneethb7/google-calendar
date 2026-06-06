@@ -108,7 +108,7 @@ function HolidaySettings({ isOpen, onClose }) {
         className="bg-white dark:bg-[#1E1F20] rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#444746]">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
             Holiday Settings
           </h2>
@@ -135,7 +135,7 @@ function HolidaySettings({ isOpen, onClose }) {
                   <select
                     value={selectedCountry}
                     onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-[#2A2B2D] text-gray-800 dark:text-gray-200"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-[#444746] rounded bg-white dark:bg-[#2A2B2D] text-gray-800 dark:text-gray-200"
                   >
                     <option value="">Select Country</option>
                     {countries.map((country) => (
@@ -149,7 +149,7 @@ function HolidaySettings({ isOpen, onClose }) {
                     value={selectedRegion}
                     onChange={(e) => setSelectedRegion(e.target.value)}
                     placeholder="Region (optional)"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-[#2A2B2D] text-gray-800 dark:text-gray-200"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-[#444746] rounded bg-white dark:bg-[#2A2B2D] text-gray-800 dark:text-gray-200"
                   />
                   <button
                     onClick={handleAddPreference}
@@ -205,7 +205,7 @@ function HolidaySettings({ isOpen, onClose }) {
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-[#444746]">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"

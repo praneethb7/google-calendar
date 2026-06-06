@@ -303,11 +303,11 @@ function EventModal({ event, onClose, onEventSaved }) {
         onClick={onClose}
       >
         <div
-          className="bg-white dark:bg-[#303134] rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transition-colors"
+          className="bg-white dark:bg-[#2d2e2f] rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700/50">
+          <div className="flex items-center px-6 py-4 border-b border-gray-200 dark:border-[#444746]/50">
             <div
               className="w-4 h-4 rounded-sm mr-3"
               style={{
@@ -360,7 +360,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     name="startTime"
                     value={formData.startTime}
                     onChange={handleChange}
-                    className="px-3 py-2 text-sm rounded-md border dark:border-gray-600 bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
+                    className="px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
                   />
                   <span className="text-gray-500">–</span>
                   <input
@@ -368,7 +368,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     name="endTime"
                     value={formData.endTime}
                     onChange={handleChange}
-                    className="px-3 py-2 text-sm rounded-md border dark:border-gray-600 bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
+                    className="px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
                   />
                 </div>
                 <label className="flex items-center gap-2 mt-2">
@@ -443,7 +443,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     name="calendarId"
                     value={formData.calendarId}
                     onChange={handleChange}
-                    className="flex-1 px-3 py-2 rounded-md border dark:border-gray-600 bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100"
+                    className="flex-1 px-3 py-2 rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100"
                   >
                     {calendars.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -488,7 +488,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     onChange={handleChange}
                     rows="3"
                     placeholder="Add description"
-                    className="flex-1 px-3 py-2 text-sm rounded-md border dark:border-gray-600 bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 resize-none"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 resize-none"
                   />
                 </div>
 
@@ -502,7 +502,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     value={formData.location}
                     onChange={handleChange}
                     placeholder="Add location"
-                    className="flex-1 px-3 py-2 text-sm rounded-md border dark:border-gray-600 bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </>
@@ -510,7 +510,7 @@ function EventModal({ event, onClose, onEventSaved }) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#292a2d]">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-[#444746] bg-gray-50 dark:bg-[#292a2d]">
             <div>
               {isEditing && (
                 <button

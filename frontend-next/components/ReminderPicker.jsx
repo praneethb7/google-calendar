@@ -120,7 +120,7 @@ export default function ReminderPicker({ reminders = [], onChange }) {
               </button>
 
               {showPresets && (
-                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 min-w-[220px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-[#444746] z-50 min-w-[220px] py-1">
                   {presetReminders.map((p, i) => (
                     <button
                       key={i}
@@ -150,12 +150,12 @@ export default function ReminderPicker({ reminders = [], onChange }) {
                   min="0"
                   value={minutesBefore}
                   onChange={(e) => setMinutesBefore(e.target.value)}
-                  className="px-2 py-1 w-24 rounded border dark:border-gray-600 bg-white dark:bg-gray-700"
+                  className="px-2 py-1 w-24 rounded border dark:border-[#444746] bg-white dark:bg-gray-700"
                 />
                 <select
                   value={timeUnit}
                   onChange={(e) => setTimeUnit(e.target.value)}
-                  className="px-2 py-1 rounded border dark:border-gray-600 bg-white dark:bg-gray-700"
+                  className="px-2 py-1 rounded border dark:border-[#444746] bg-white dark:bg-gray-700"
                 >
                   <option value="minutes">minutes</option>
                   <option value="hours">hours</option>
@@ -173,7 +173,7 @@ export default function ReminderPicker({ reminders = [], onChange }) {
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full px-2 py-1 rounded border dark:border-gray-600 bg-white dark:bg-gray-700"
+                  className="w-full px-2 py-1 rounded border dark:border-[#444746] bg-white dark:bg-gray-700"
                 >
                   <option value="notification">Notification</option>
                   <option value="email">Email</option>

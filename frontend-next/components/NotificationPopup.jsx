@@ -64,10 +64,10 @@ function NotificationPopup({ onClose }) {
     <div
       className="absolute top-16 right-6 w-96 max-h-[80vh] overflow-y-auto
                  bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl
-                 border border-gray-200 dark:border-gray-700 z-[200]"
+                 border border-gray-200 dark:border-[#444746] z-[200]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-[#444746]">
         <h3 className="font-medium text-gray-800 dark:text-gray-100">
           Notifications
         </h3>
@@ -82,7 +82,7 @@ function NotificationPopup({ onClose }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b dark:border-gray-700">
+      <div className="flex border-b dark:border-[#444746]">
         <button
           className={`flex-1 py-2 text-sm font-medium flex items-center justify-center gap-1
             ${

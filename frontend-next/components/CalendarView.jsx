@@ -5,6 +5,7 @@ import MonthView from "./views/MonthView";
 import WeekView from "./views/WeekView";
 import DayView from "./views/DayView";
 import ScheduleView from "./views/ScheduleView";
+import YearView from "./views/YearView";
 
 function useReminders(events = []) {
   useEffect(() => {
@@ -39,11 +40,37 @@ function CalendarView({ onEventClick, onEventContextMenu, onGridClick, placehold
   const viewProps = { onEventClick, onEventContextMenu, onGridClick, placeholder };
 
   return (
-    <div className="flex-1 overflow-hidden bg-white dark:bg-[#202124]">
-      {currentView === "month" && <MonthView {...viewProps} />}
-      {currentView === "week" && <WeekView {...viewProps} />}
-      {currentView === "day" && <DayView {...viewProps} />}
-      {currentView === "schedule" && <ScheduleView onEventClick={onEventClick} />}
+    <div id="calendar-grid-area" className="flex-1 overflow-hidden bg-white dark:bg-[#1b1b1b]">
+      {currentView === "month" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <MonthView {...viewProps} />
+        </div>
+      )}
+      {currentView === "year" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <YearView onEventClick={onEventClick} />
+        </div>
+      )}
+      {currentView === "week" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <WeekView {...viewProps} />
+        </div>
+      )}
+      {currentView === "4days" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <WeekView {...viewProps} numDays={4} anchor="start" />
+        </div>
+      )}
+      {currentView === "day" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <DayView {...viewProps} />
+        </div>
+      )}
+      {currentView === "schedule" && (
+        <div className="h-full pl-2 pr-4 pb-4 overflow-hidden">
+          <ScheduleView onEventClick={onEventClick} />
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useHolidayStore } from "@/store/useHolidayStore";
 import CalendarShareModal from "./CalendarShareModal";
 import EventModal from "./EventModal";
 
-function CalendarSidebar({ onCreateEvent }) {
+function CalendarSidebar({ onCreateEvent, collapsed = false }) {
   const {
     calendars,
     sharedCalendars,
@@ -29,7 +29,14 @@ function CalendarSidebar({ onCreateEvent }) {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
 
+  // "Meet with…" people search
+  const [peopleQuery, setPeopleQuery] = useState("");
+  const [showPeopleResults, setShowPeopleResults] = useState(false);
+  const [meetingWith, setMeetingWith] = useState([]);
+  const [recentPeople, setRecentPeople] = useState([]);
+
   const createDropdownRef = useRef();
+  const peopleSearchRef = useRef();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,10 +47,85 @@ function CalendarSidebar({ onCreateEvent }) {
       ) {
         setShowCreateDropdown(false);
       }
+      if (
+        peopleSearchRef.current &&
+        !peopleSearchRef.current.contains(e.target)
+      ) {
+        setShowPeopleResults(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Load previously-met people from localStorage
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("meetWithPeople") || "[]");
+      if (Array.isArray(saved)) setRecentPeople(saved);
+    } catch {
+      // ignore malformed storage
+    }
+  }, []);
+
+  // "Meet with…" helpers
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  const personName = (email) => {
+    const local = email.split("@")[0];
+    return local
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+      .join(" ");
+  };
+
+  const personColor = (email) => {
+    const palette = ["#1a73e8", "#d93025", "#f4b400", "#0f9d58", "#ab47bc", "#ff6d00"];
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) hash = email.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  };
+
+  const q = peopleQuery.trim().toLowerCase();
+  const peopleSuggestions = recentPeople.filter(
+    (p) =>
+      !meetingWith.some((m) => m.email === p.email) &&
+      (p.email.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
+  );
+
+  const addPerson = (person) => {
+    if (meetingWith.some((m) => m.email === person.email)) return;
+    setMeetingWith((prev) => [...prev, person]);
+    setRecentPeople((prev) => {
+      const next = [person, ...prev.filter((p) => p.email !== person.email)].slice(0, 20);
+      try {
+        localStorage.setItem("meetWithPeople", JSON.stringify(next));
+      } catch {
+        // ignore storage failures
+      }
+      return next;
+    });
+    setPeopleQuery("");
+    setShowPeopleResults(false);
+  };
+
+  const removePerson = (email) =>
+    setMeetingWith((prev) => prev.filter((p) => p.email !== email));
+
+  const handlePeopleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (peopleSuggestions.length > 0) {
+        addPerson(peopleSuggestions[0]);
+      } else if (isValidEmail(peopleQuery.trim())) {
+        const email = peopleQuery.trim();
+        addPerson({ email, name: personName(email) });
+      }
+    } else if (e.key === "Escape") {
+      setShowPeopleResults(false);
+    }
+  };
 
   // Refresh events after modal closes
   const handleEventSaved = async () => {
@@ -164,54 +246,73 @@ function CalendarSidebar({ onCreateEvent }) {
 
   return (
     <>
-      <aside className="w-[256px] min-w-[256px] border-r border-google-gray-200 dark:border-gray-800 bg-white dark:bg-[#202124] transition-colors h-full flex flex-col overflow-y-auto scrollbar-hide">
+      {/* Collapsed "+" Create FAB — floats over the grid, fades in when the
+          sidebar is collapsed. Rendered as a sibling of <aside> so it isn't
+          clipped when the aside animates to zero width. */}
+      <div
+        className={`absolute left-4 top-3 z-30 transition-opacity duration-300 ${
+          collapsed ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="relative inline-block">
+          <button
+            className="flex items-center justify-center w-14 h-14 bg-white dark:bg-[#37393b] rounded-2xl shadow-google-md hover:shadow-google-lg transition-shadow hover:bg-google-gray-50 dark:hover:bg-[#444746] focus:outline-none"
+            onClick={() => setShowEventModal(true)}
+            tabIndex={collapsed ? 0 : -1}
+            title="Create"
+            aria-label="Create"
+          >
+            <span className="material-icons-outlined text-[24px] text-google-gray-700 dark:text-[#e3e3e3]">add</span>
+          </button>
+        </div>
+      </div>
+
+      <aside
+        className={`w-[250px] min-w-[250px] ${
+          collapsed ? "ml-[-250px]" : "ml-0"
+        } border-r border-google-gray-200 dark:border-transparent bg-white dark:bg-[#1b1b1b] transition-[margin] duration-300 ease-in-out h-full flex flex-col overflow-y-auto overflow-x-hidden scrollbar-hide`}
+      >
         {/* === Create Button === */}
-        <div className="pl-4 pt-4 pb-2">
+        <div className="pl-4 pt-4 pb-3">
           <div className="relative inline-block" ref={createDropdownRef}>
-            <div className="flex items-center bg-white dark:bg-[#3c4043] rounded-full shadow-google-sm hover:shadow-google-md transition-shadow h-12 border border-transparent hover:bg-google-gray-50 dark:hover:bg-[#4a4d51]">
+            <div className="flex items-center w-[140px] h-14 bg-white dark:bg-[#37393b] rounded-2xl shadow-google-sm hover:shadow-google-md transition-shadow border border-transparent hover:bg-google-gray-50 dark:hover:bg-[#444746]">
               <button
-                className="flex items-center gap-3 pl-3 pr-3 h-full rounded-l-full focus:outline-none"
+                className="flex items-center gap-3 pl-4 pr-1 h-full flex-1 rounded-l-2xl focus:outline-none"
                 onClick={() => setShowEventModal(true)}
               >
-                <svg width="32" height="32" viewBox="0 0 36 36">
-                  <path fill="#34A853" d="M16 16v14h4V20z" />
-                  <path fill="#4285F4" d="M30 16H20l-4 4h14z" />
-                  <path fill="#FBBC04" d="M6 16v4h10l4-4z" />
-                  <path fill="#EA4335" d="M20 16V6h-4v14z" />
-                  <path fill="none" d="M0 0h36v36H0z" />
-                </svg>
-                <span className="text-sm font-medium text-google-gray-700 dark:text-gray-100">Create</span>
+                <span className="material-icons-outlined text-[24px] text-google-gray-700 dark:text-[#e3e3e3]">add</span>
+                <span className="text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3]">Create</span>
               </button>
               <button
-                className="flex items-center justify-center px-2 h-full rounded-r-full hover:bg-google-gray-200 dark:hover:bg-[#5f6368] focus:outline-none"
+                className="flex items-center justify-center pr-3 h-full rounded-r-2xl focus:outline-none"
                 onClick={() => setShowCreateDropdown(!showCreateDropdown)}
                 aria-haspopup="true"
                 aria-expanded={showCreateDropdown}
               >
-                <span className="material-icons-outlined text-google-gray-700 dark:text-gray-300">arrow_drop_down</span>
+                <span className="material-icons-outlined text-[20px] text-google-gray-700 dark:text-[#c4c7c5]">arrow_drop_down</span>
               </button>
             </div>
 
             {showCreateDropdown && (
-              <div className="absolute top-14 left-0 w-48 bg-white dark:bg-[#303134] rounded-lg shadow-google-md z-50 py-2 border border-google-gray-200 dark:border-gray-700 animate-fadeIn">
+              <div className="absolute top-[72px] left-0 w-48 bg-white dark:bg-[#2d2e2f] rounded-lg shadow-google-md z-50 py-2 border border-google-gray-200 dark:border-[#444746] animate-fadeIn">
                 <button
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-google-gray-700 hover:bg-google-gray-100"
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-100 dark:hover:bg-[#37393b]"
                   onClick={() => {
                     setShowEventModal(true);
                     setShowCreateDropdown(false);
                   }}
                 >
-                  <span className="material-icons-outlined text-[20px] text-google-gray-600">event</span>
+                  <span className="material-icons-outlined text-[20px] text-google-gray-600 dark:text-[#c4c7c5]">event</span>
                   <span>Event</span>
                 </button>
                 <button
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-google-gray-700 hover:bg-google-gray-100"
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-100 dark:hover:bg-[#37393b]"
                   onClick={() => {
                     setShowEventModal(true);
                     setShowCreateDropdown(false);
                   }}
                 >
-                  <span className="material-icons-outlined text-[20px] text-google-gray-600">task_alt</span>
+                  <span className="material-icons-outlined text-[20px] text-google-gray-600 dark:text-[#c4c7c5]">task_alt</span>
                   <span>Task</span>
                 </button>
               </div>
@@ -220,59 +321,57 @@ function CalendarSidebar({ onCreateEvent }) {
         </div>
 
         {/* === Mini Calendar === */}
-        <div className="px-4 py-4 mb-2">
-          <div className="flex justify-between items-center mb-2 pl-2">
-            <span className="text-sm font-medium text-google-gray-700 dark:text-gray-100">
-              {miniCalendarDate.toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-            <div className="flex items-center gap-1">
+        <div className="px-5 pt-3 pb-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-medium text-google-gray-800 dark:text-[#e3e3e3]">
+              {miniCalendarDate.toLocaleString("default", { month: "long", year: "numeric" })}
+            </h3>
+            <div className="flex items-center">
               <button
-                className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#3c4043] flex items-center justify-center text-google-gray-700 dark:text-gray-300 transition-colors"
                 onClick={handlePrevMonth}
+                aria-label="Previous month"
+                className="w-7 h-7 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-600 dark:text-[#c4c7c5] focus:outline-none"
               >
-                <span className="material-icons-outlined text-[20px]">chevron_left</span>
+                <span className="material-icons-outlined text-[18px]">chevron_left</span>
               </button>
               <button
-                className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#3c4043] flex items-center justify-center text-google-gray-700 dark:text-gray-300 transition-colors"
                 onClick={handleNextMonth}
+                aria-label="Next month"
+                className="w-7 h-7 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-600 dark:text-[#c4c7c5] focus:outline-none"
               >
-                <span className="material-icons-outlined text-[20px]">chevron_right</span>
+                <span className="material-icons-outlined text-[18px]">chevron_right</span>
               </button>
             </div>
           </div>
-          
-          <div className="grid grid-cols-7 mb-1">
+          <div className="grid grid-cols-7">
             {weekDays.map((day, index) => (
               <div
                 key={index}
-                className="text-center text-[11px] font-medium text-google-gray-500 dark:text-gray-400 py-1"
+                className="text-center text-[10px] font-medium text-google-gray-500 dark:text-[#c4c7c5] py-0"
               >
                 {day}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-y-1">
+          <div className="grid grid-cols-7">
             {days.map((day, index) => {
               const selected = isSelected(day.date);
               const today = isToday(day.date);
+              const hi = selected || today;
               return (
                 <button
                   key={index}
-                  className={`relative flex items-center justify-center w-8 h-8 mx-auto rounded-full text-xs font-medium focus:outline-none transition-colors
-                    ${selected ? "bg-google-blue-light text-google-blue-dark dark:bg-blue-900/40 dark:text-blue-200" : 
-                      today ? "bg-google-blue text-white" : "hover:bg-google-gray-100 dark:hover:bg-[#3c4043]"}
-                    ${!day.isCurrentMonth && !selected && !today ? "text-google-gray-400 dark:text-gray-600" : ""}
-                    ${day.isCurrentMonth && !selected && !today ? "text-google-gray-700 dark:text-gray-200" : ""}
+                  className={`relative flex items-center justify-center w-6 h-6 mx-auto my-[1px] rounded-full text-[10px] font-medium focus:outline-none transition-colors
+                    ${hi ? "bg-google-blue text-white dark:bg-[#a8c7fa] dark:text-[#062e6f]" : "hover:bg-google-gray-100 dark:hover:bg-[#37393b]"}
+                    ${!day.isCurrentMonth && !hi ? "text-google-gray-400 dark:text-[#9aa0a6]" : ""}
+                    ${day.isCurrentMonth && !hi ? "text-google-gray-700 dark:text-[#e3e3e3]" : ""}
                   `}
                   onClick={() => handleDateClick(day.date)}
                 >
                   <span>{day.date.getDate()}</span>
                   {hasHoliday(day.date) && (
                     <div
-                      className={`absolute bottom-[-2px] w-1 h-1 rounded-full ${today ? "bg-white" : "bg-google-red"}`}
+                      className={`absolute bottom-[-1px] w-1 h-1 rounded-full ${hi ? "bg-white dark:bg-[#062e6f]" : "bg-google-red"}`}
                       title="Holiday"
                     />
                   )}
@@ -282,17 +381,131 @@ function CalendarSidebar({ onCreateEvent }) {
           </div>
         </div>
 
+        {/* === Meet with… === */}
+        <div className="px-4 pt-1 pb-2">
+          <h3 className="text-sm font-medium text-google-gray-800 dark:text-[#e3e3e3] mb-2">Meet with…</h3>
+          <div className="relative" ref={peopleSearchRef}>
+            <div className="flex items-center gap-3 h-12 rounded-lg bg-google-gray-100 dark:bg-[#37393b] px-3">
+              <span className="material-icons-outlined text-[20px] text-google-gray-600 dark:text-[#c4c7c5]">group</span>
+              <input
+                value={peopleQuery}
+                onChange={(e) => {
+                  setPeopleQuery(e.target.value);
+                  setShowPeopleResults(true);
+                }}
+                onFocus={() => setShowPeopleResults(true)}
+                onKeyDown={handlePeopleKeyDown}
+                placeholder="Search for people"
+                aria-label="Search for people to meet"
+                className="flex-1 min-w-0 bg-transparent text-sm text-google-gray-700 dark:text-[#e3e3e3] placeholder:text-google-gray-500 dark:placeholder:text-[#9aa0a6] outline-none"
+              />
+            </div>
+
+            {/* Results dropdown */}
+            {showPeopleResults && (peopleSuggestions.length > 0 || isValidEmail(peopleQuery.trim())) && (
+              <div className="absolute left-0 right-0 top-[52px] z-50 bg-white dark:bg-[#2d2e2f] rounded-lg shadow-google-md border border-google-gray-200 dark:border-[#444746] py-1 max-h-64 overflow-y-auto animate-fadeIn">
+                {peopleSuggestions.map((person) => (
+                  <button
+                    key={person.email}
+                    type="button"
+                    onClick={() => addPerson(person)}
+                    className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-google-gray-100 dark:hover:bg-[#37393b]"
+                  >
+                    <span
+                      className="flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-medium shrink-0"
+                      style={{ backgroundColor: personColor(person.email) }}
+                    >
+                      {person.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm text-google-gray-700 dark:text-[#e3e3e3] truncate">{person.name}</span>
+                      <span className="block text-xs text-google-gray-500 dark:text-[#9aa0a6] truncate">{person.email}</span>
+                    </span>
+                  </button>
+                ))}
+                {isValidEmail(peopleQuery.trim()) &&
+                  !peopleSuggestions.some((p) => p.email === peopleQuery.trim()) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addPerson({ email: peopleQuery.trim(), name: personName(peopleQuery.trim()) })
+                      }
+                      className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-google-gray-100 dark:hover:bg-[#37393b]"
+                    >
+                      <span className="material-icons-outlined text-[20px] text-google-gray-600 dark:text-[#c4c7c5] w-7 text-center shrink-0">person_add</span>
+                      <span className="text-sm text-google-gray-700 dark:text-[#e3e3e3] truncate">
+                        Add &ldquo;{peopleQuery.trim()}&rdquo;
+                      </span>
+                    </button>
+                  )}
+              </div>
+            )}
+          </div>
+
+          {/* Selected people chips */}
+          {meetingWith.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {meetingWith.map((person) => (
+                <span
+                  key={person.email}
+                  className="flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-full bg-google-gray-100 dark:bg-[#37393b] text-xs text-google-gray-700 dark:text-[#e3e3e3] max-w-full"
+                  title={person.email}
+                >
+                  <span
+                    className="flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-medium shrink-0"
+                    style={{ backgroundColor: personColor(person.email) }}
+                  >
+                    {person.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="truncate">{person.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removePerson(person.email)}
+                    className="material-icons-outlined text-[14px] text-google-gray-500 dark:text-[#9aa0a6] hover:text-google-gray-700 dark:hover:text-[#e3e3e3] shrink-0"
+                    aria-label={`Remove ${person.name}`}
+                  >
+                    close
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* === Booking pages === */}
+        <div className="px-4 py-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-google-gray-800 dark:text-[#e3e3e3]">Booking pages</h3>
+            <button className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-700 dark:text-[#c4c7c5]">
+              <span className="material-icons-outlined text-[20px]">add</span>
+            </button>
+          </div>
+        </div>
+
+        {/* === Time Insights === */}
+        <div className="px-4 py-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-google-gray-800 dark:text-[#e3e3e3]">Time Insights</h3>
+            <div className="flex items-center gap-2">
+              <span className="material-icons-outlined text-[20px] text-google-gray-600 dark:text-[#c4c7c5]">insights</span>
+              <button className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-700 dark:text-[#c4c7c5]">
+                <span className="material-icons-outlined text-[20px]">expand_more</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* === My Calendars === */}
-        <div className="px-4 py-2 mt-4">
-          <div className="flex justify-between items-center mb-1 group cursor-pointer hover:bg-google-gray-50 dark:hover:bg-[#3c4043] rounded px-2 -mx-2">
-            <h3 className="text-sm font-medium text-google-gray-700 dark:text-gray-100 py-1 flex-1">
+        <div className="px-4 py-2 mt-2">
+          <div className="flex justify-between items-center mb-1 group">
+            <h3 className="text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] py-1 flex-1">
               My calendars
             </h3>
             <button
-              className="w-6 h-6 rounded hover:bg-google-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-google-gray-600 dark:text-gray-300 transition-colors opacity-0 group-hover:opacity-100"
+              className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-600 dark:text-[#c4c7c5] transition-colors"
               onClick={(e) => { e.stopPropagation(); setShowNewCalendar(!showNewCalendar); }}
             >
-              <span className="material-icons-outlined text-[16px]">add</span>
+              <span className="material-icons-outlined text-[20px]">expand_less</span>
             </button>
           </div>
 
@@ -365,11 +578,19 @@ function CalendarSidebar({ onCreateEvent }) {
         </div>
 
         {/* === Other Calendars === */}
-        <div className="px-4 py-2 mt-2">
-          <div className="flex justify-between items-center mb-1 group cursor-pointer hover:bg-google-gray-50 dark:hover:bg-[#3c4043] rounded px-2 -mx-2">
-            <h3 className="text-sm font-medium text-google-gray-700 dark:text-gray-100 py-1">
+        <div className="px-4 py-2">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] py-1 flex-1">
               Other calendars
             </h3>
+            <div className="flex items-center -space-x-1">
+              <button className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-600 dark:text-[#c4c7c5]">
+                <span className="material-icons-outlined text-[20px]">add</span>
+              </button>
+              <button className="w-8 h-8 rounded-full hover:bg-google-gray-100 dark:hover:bg-[#37393b] flex items-center justify-center text-google-gray-600 dark:text-[#c4c7c5]">
+                <span className="material-icons-outlined text-[20px]">expand_less</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-[2px]">

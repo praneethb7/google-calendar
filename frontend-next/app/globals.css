@@ -4,6 +4,8 @@
 
 :root {
   --color-bg-primary: #ffffff;
+  --color-bg-app: #ffffff;
+  --color-outline: #dadce0;
   --color-bg-secondary: #f8f9fa;
   --color-bg-hover: #f1f3f4;
   --color-text-primary: #202124;
@@ -44,17 +46,21 @@
 }
 
 .dark {
-  --color-bg-primary: #202124;
-  --color-bg-secondary: #292a2d;
-  --color-bg-hover: #3c4043;
-  --color-text-primary: #e8eaed;
-  --color-text-secondary: #9aa0a6;
-  --color-secondary-text: #9aa0a6;
-  --color-border-light: #3c4043;
-  --color-primary: #8ab4f8;
-  --color-primary-text: #e8eaed;
-  --color-google-blue: #8ab4f8;
-  --color-google-blue-light: #394457;
+  /* Google Calendar dark-mode palette (matches desktop capture) */
+  --color-bg-primary: #1b1b1b;     /* calendar grid / main surface */
+  --color-bg-app: #131314;          /* top app bar, deepest surface */
+  --color-bg-secondary: #2d2e2f;    /* cards, dropdowns, modals */
+  --color-bg-hover: #37393b;        /* hover / chip fill */
+  --color-text-primary: #e3e3e3;
+  --color-text-secondary: #c4c7c5;
+  --color-secondary-text: #c4c7c5;
+  --color-border-light: #444746;
+  --color-border-medium: #5f6368;
+  --color-outline: #8e918f;         /* outlined button borders */
+  --color-primary: #a8c7fa;         /* accent blue (links, today) */
+  --color-primary-text: #e3e3e3;
+  --color-google-blue: #a8c7fa;
+  --color-google-blue-light: #004a77;   /* selected segment fill */
   --color-google-green: #81c995;
   --color-google-green-light: #2d4a3e;
   --color-google-red: #f28b82;
@@ -68,7 +74,7 @@
 
 @layer components {
   .icon-button {
-    @apply w-10 h-10 flex items-center justify-center rounded-full text-google-gray-700 dark:text-gray-300 hover:bg-google-gray-100 dark:hover:bg-[#3c4043] transition-colors focus-visible:outline-none cursor-pointer;
+    @apply w-10 h-10 flex items-center justify-center rounded-full text-google-gray-700 dark:text-[#c4c7c5] hover:bg-google-gray-100 dark:hover:bg-[#37393b] transition-colors focus-visible:outline-none cursor-pointer;
   }
 
   .icon-button svg {
@@ -99,6 +105,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #bdc1c6;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #5f6368;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #80868b;
+}
 
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -107,3 +119,32 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* ── Google Calendar view picker menu (pixel-perfect replica) ───────────── */
+/* Captured component styles, prefixed vp- to scope them. */
+.vp-s1 { display: block; position: relative; padding-top: 8px; padding-bottom: 8px; top: 0; right: 0; bottom: 0; left: 0; color: #000000; border-radius: 4px; font-family: "Google Sans Text", "Google Sans", Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 16px; text-align: start; white-space: normal; -webkit-font-smoothing: antialiased; text-rendering: geometricprecision; background-color: #1e1f20; list-style: none; margin: 0; }
+.vp-s2 { display: block; }
+.vp-s3 { display: flex; position: relative; padding: 8px 12px; min-height: 40px; flex-direction: row; justify-content: flex-start; align-items: center; gap: 16px; top: 0; right: 0; bottom: 0; left: 0; cursor: pointer; list-style: none; }
+.vp-s4 { display: block; position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; }
+.vp-s5 { display: flex; flex-direction: column; justify-content: center; align-items: normal; flex-grow: 1; flex-basis: 0%; align-self: stretch; color: #e3e3e3; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; pointer-events: none; }
+.vp-s6 { display: block; font-family: "Google Sans Text", "Google Sans"; font-size: 14px; line-height: 20px; text-overflow: ellipsis; overflow: hidden; pointer-events: none; }
+.vp-s7 { display: flex; flex-direction: row; gap: 8px; flex-shrink: 0; color: #c4c7c5; font-family: "Google Sans Text", "Google Sans"; font-size: 11px; font-weight: 500; letter-spacing: 0.1px; pointer-events: none; }
+.vp-s8 { display: list-item; padding-top: 8px; padding-bottom: 8px; background-color: #444746; list-style: none; }
+.vp-s9 { display: list-item; list-style: none; }
+.vp-s10 { display: flex; flex-direction: row; flex-shrink: 0; min-width: 20px; min-height: 20px; color: #c2e7ff; font-size: 20px; line-height: 20px; pointer-events: none; }
+.vp-s11 { display: flex; position: relative; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; }
+.vp-s12 { display: flex; pointer-events: none; }
+.vp-s13 { display: flex; position: relative; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; }
+.vp-s14 { display: block; border-radius: 4px; position: absolute; }
+
+.vp-p1::before { content: ''; display: block; position: absolute; top: 0; right: 0; bottom: 0; left: 0; border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 4px; pointer-events: none; }
+/* hover overlay (p3): default invisible, lights up on row hover */
+.vp-p3::before { content: ''; display: block; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: #e3e3e3; opacity: 0; transition: opacity 0.08s ease; pointer-events: none; }
+.vp-s3:hover > .vp-p3::before { opacity: 0.08; }
+
+/* ── Information density: "Compact" tightens the whole UI by ~5% ─────────── */
+html.density-compact { zoom: 0.95; }
+
+/* ── Color set: "Classic" renders event chips with black text ───────────── */
+html.colorset-classic .gc-event-chip,
+html.colorset-classic .gc-event-chip * { color: #202124 !important; }

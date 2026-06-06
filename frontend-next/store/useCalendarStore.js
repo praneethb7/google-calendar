@@ -18,6 +18,15 @@ function getDateRange(date, view) {
     start.setHours(0, 0, 0, 0);
     end.setMonth(end.getMonth() + 1, 0);
     end.setHours(23, 59, 59, 999);
+  } else if (view === "year") {
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+    end.setMonth(11, 31);
+    end.setHours(23, 59, 59, 999);
+  } else if (view === "4days") {
+    start.setHours(0, 0, 0, 0);
+    end.setDate(end.getDate() + 3);
+    end.setHours(23, 59, 59, 999);
   } else {
     start.setHours(0, 0, 0, 0);
     end.setDate(end.getDate() + 30);
@@ -34,6 +43,14 @@ export const useCalendarStore = create((set, get) => ({
   currentDate: new Date(),
   loading: false,
   error: null,
+
+  // ── View options (shown in the view picker menu) ──────────────────────────
+  showWeekends: true,
+  showDeclinedEvents: true,
+  showCompletedTasks: true,
+  toggleShowWeekends: () => set((s) => ({ showWeekends: !s.showWeekends })),
+  toggleShowDeclinedEvents: () => set((s) => ({ showDeclinedEvents: !s.showDeclinedEvents })),
+  toggleShowCompletedTasks: () => set((s) => ({ showCompletedTasks: !s.showCompletedTasks })),
 
   // ── Calendars ────────────────────────────────────────────────────────────
   fetchCalendars: async () => {
@@ -128,8 +145,27 @@ export const useCalendarStore = create((set, get) => ({
   },
 
   deleteEvent: async (id, deleteAll = false) => {
+    // Callers pass ids in mixed forms (numeric from the store, stringified base
+    // ids from EventModal), so compare loosely so the trash snapshot below
+    // always finds the event being removed.
+    const ev = get().events.find((e) => String(e.id) === String(id));
     await eventsAPI.delete(id, deleteAll);
-    set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
+    set((s) => ({ events: s.events.filter((e) => String(e.id) !== String(id)) }));
+    // Snapshot into the (client-side) trash so it can be restored within 30 days.
+    if (ev) {
+      try {
+        const trash = JSON.parse(localStorage.getItem("calendarTrash") || "[]");
+        trash.unshift({
+          ...ev,
+          trashId: `${id}-${Date.now()}`,
+          deleted_at: new Date().toISOString(),
+        });
+        localStorage.setItem("calendarTrash", JSON.stringify(trash.slice(0, 200)));
+        window.dispatchEvent(new Event("calendar-trash-updated"));
+      } catch {
+        // ignore storage failures
+      }
+    }
   },
 
   searchEvents: async (query) => {
