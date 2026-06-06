@@ -69,7 +69,9 @@
       "Bash(sed -n '150,175p' components/views/MonthView.jsx)",
       "Bash(curl -s --max-time 3 http://localhost:8000/health)",
       "Bash(npx esbuild *)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(node -e \"require\\('@babel/core'\\).transformFileSync\\('components/TasksView.jsx',{presets:['next/babel']}\\); console.log\\('TasksView OK'\\)\")"
     ]
   }
 }

@@ -14,6 +14,8 @@ function CalendarHeader({
   onToggleUpcoming,
   onOpenHolidaySettings,
   onToggleSidebar,
+  activeApp = "calendar",
+  onChangeApp = () => {},
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -21,7 +23,6 @@ function CalendarHeader({
   const [showTrash, setShowTrash] = useState(false);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
-  const [activeApp, setActiveApp] = useState("calendar");
   const helpMenuRef = useRef(null);
   const settingsDropdownRef = useRef(null);
 
@@ -45,6 +46,11 @@ function CalendarHeader({
     return `https://www.gstatic.com/images/branding/productlogos/calendar_${ym}/v2/png/calendar_${ym}_96dp.png`;
   })();
 
+  // Tasks uses its own favicon, matching Google Calendar's behaviour when you
+  // switch to the Tasks surface.
+  const tasksIconUrl =
+    "https://www.gstatic.com//tasks/31bf352b350141ee0437b2e7770c70c9/favicon.ico";
+
   useEffect(() => {
     let link = document.querySelector("link[rel='icon']");
     if (!link) {
@@ -52,8 +58,8 @@ function CalendarHeader({
       link.rel = "icon";
       document.head.appendChild(link);
     }
-    link.href = calendarIconUrl;
-  }, [calendarIconUrl]);
+    link.href = activeApp === "tasks" ? tasksIconUrl : calendarIconUrl;
+  }, [calendarIconUrl, tasksIconUrl, activeApp]);
 
   const VIEW_ITEMS = [
     { id: "day", label: "Day", key: "D" },
@@ -160,40 +166,46 @@ function CalendarHeader({
             </div>
           </div>
 
-          <button
-            onClick={handleToday}
-            className="border border-google-gray-300 dark:border-[#8e918f] rounded-full px-6 py-2 text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] mr-5 transition-colors"
-          >
-            Today
-          </button>
+          {activeApp !== "tasks" && (
+            <>
+              <button
+                onClick={handleToday}
+                className="border border-google-gray-300 dark:border-[#8e918f] rounded-full px-6 py-2 text-sm font-medium text-google-gray-700 dark:text-[#e3e3e3] hover:bg-google-gray-50 dark:hover:bg-[#37393b] mr-5 transition-colors"
+              >
+                Today
+              </button>
 
-          <div className="flex items-center -space-x-1">
-            <button
-              onClick={handlePrevious}
-              className="icon-button"
-              title="Previous"
-            >
-              <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_left</span>
-            </button>
-            <button
-              onClick={handleNext}
-              className="icon-button"
-              title="Next"
-            >
-              <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_right</span>
-            </button>
-          </div>
+              <div className="flex items-center -space-x-1">
+                <button
+                  onClick={handlePrevious}
+                  className="icon-button"
+                  title="Previous"
+                >
+                  <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_left</span>
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="icon-button"
+                  title="Next"
+                >
+                  <span className="material-icons-outlined text-[24px] dark:text-[#c4c7c5]">chevron_right</span>
+                </button>
+              </div>
 
-          <h1 className="text-[22px] leading-7 text-google-gray-700 dark:text-[#e3e3e3] ml-5 hidden md:block whitespace-nowrap" style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>
-            {getDateDisplay()}
-          </h1>
+              <h1 className="text-[22px] leading-7 text-google-gray-700 dark:text-[#e3e3e3] ml-5 hidden md:block whitespace-nowrap" style={{ fontFamily: '"Google Sans", Roboto, Arial, sans-serif' }}>
+                {getDateDisplay()}
+              </h1>
+            </>
+          )}
         </div>
 
         {/* Right Section */}
         <div className="flex items-center gap-1 pr-2" ref={helpMenuRef}>
-          <div className="hidden lg:block mr-2">
-            <SearchBar onEventClick={onEventClick} user={user} />
-          </div>
+          {activeApp !== "tasks" && (
+            <div className="hidden lg:block mr-2">
+              <SearchBar onEventClick={onEventClick} user={user} />
+            </div>
+          )}
 
           <div className="relative">
             <button
@@ -218,6 +230,7 @@ function CalendarHeader({
             )}
           </div>
 
+          {activeApp !== "tasks" && (
           <div className="relative" ref={settingsDropdownRef}>
             <button
               onClick={() => setShowSettingsDropdown((prev) => !prev)}
@@ -257,8 +270,10 @@ function CalendarHeader({
               </div>
             )}
           </div>
+          )}
 
           {/* View Switcher Button */}
+          {activeApp !== "tasks" && (
           <div className="relative ml-2 mr-2">
             <button
               className="flex items-center justify-between border border-google-gray-300 dark:border-[#8e918f] rounded-full px-[18px] h-[40px] min-w-[64px] hover:bg-google-gray-50 dark:hover:bg-[#37393b] transition-colors"
@@ -324,11 +339,12 @@ function CalendarHeader({
               </div>
             )}
           </div>
+          )}
 
           {/* Calendar / Tasks segmented toggle */}
           <div className="hidden sm:flex items-center ml-2">
             <button
-              onClick={() => setActiveApp("calendar")}
+              onClick={() => onChangeApp("calendar")}
               title="Calendar"
               className={`flex items-center justify-center w-[54px] h-[40px] rounded-l-full border border-google-gray-300 dark:border-[#8e918f] transition-colors ${
                 activeApp === "calendar"
@@ -339,7 +355,7 @@ function CalendarHeader({
               <span className="material-icons-outlined text-[20px]">calendar_today</span>
             </button>
             <button
-              onClick={() => setActiveApp("tasks")}
+              onClick={() => onChangeApp("tasks")}
               title="Tasks"
               className={`flex items-center justify-center w-[54px] h-[40px] rounded-r-full border border-l-0 border-google-gray-300 dark:border-[#8e918f] transition-colors ${
                 activeApp === "tasks"

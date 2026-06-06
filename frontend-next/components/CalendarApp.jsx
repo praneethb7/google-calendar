@@ -14,7 +14,9 @@ import NotificationCenter from "./NotificationCenter";
 import UpcomingEvents from "./UpcomingEvents";
 import HolidaySettings from "./HolidaySettings";
 import EventPopover from "./EventPopover";
+import EventDetailsPopover from "./EventDetailsPopover";
 import EventContextMenu from "./EventContextMenu";
+import TasksView from "./TasksView";
 
 function CalendarApp() {
   const user = { id: 1, name: "RL Agent", email: "agent@gcal-rl.local" };
@@ -36,9 +38,13 @@ function CalendarApp() {
   const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
   const [showHolidaySettings, setShowHolidaySettings] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  // Which top-level surface is shown: the calendar grid or the Tasks screen.
+  const [activeApp, setActiveApp] = useState("calendar");
 
   // Popover for creating / editing events
   const [popoverState, setPopoverState] = useState({ show: false, x: 0, y: 0, date: null, event: null });
+  // Read-only details popover for an existing event
+  const [detailsState, setDetailsState] = useState({ show: false, x: 0, y: 0, event: null });
   // Placeholder blob shown in the grid before saving
   const [placeholder, setPlaceholder] = useState(null);
   // Right-click context menu
@@ -96,24 +102,35 @@ function CalendarApp() {
     setShowEventModal(true);
   };
 
-  // Single click on an existing event → open popover for editing
+  // Single click on an existing event → open read-only details popover
   const handleEventClick = useCallback((event, x, y) => {
     setContextMenu(null);
-    // If x/y provided (from view), use those; otherwise open full modal
+    setPopoverState((p) => ({ ...p, show: false, event: null }));
+    setPlaceholder(null);
     if (x !== undefined && y !== undefined) {
-      setPopoverState({ show: true, x, y, date: new Date(event.start_time), event });
-      const endDate = new Date(event.end_time);
-      setPlaceholder({
-        start: new Date(event.start_time),
-        end: endDate,
-        title: event.title || "(No title)",
-        color: event.color || event.calendar_color || "#1a73e8",
-        isExisting: true,
-      });
+      setDetailsState({ show: true, x, y, event });
     } else {
-      setSelectedEvent(event);
-      setShowEventModal(true);
+      setDetailsState({ show: true, x: window.innerWidth / 2 - 248, y: 120, event });
     }
+  }, []);
+
+  // Details popover "Edit" → open the editing popover (centered)
+  const handleDetailsEdit = useCallback((event) => {
+    setDetailsState((d) => ({ ...d, show: false, event: null }));
+    const x = Math.max(20, window.innerWidth / 2 - 353);
+    const y = 80;
+    setPopoverState({ show: true, x, y, date: new Date(event.start_time), event });
+    setPlaceholder({
+      start: new Date(event.start_time),
+      end: new Date(event.end_time),
+      title: event.title || "(No title)",
+      color: event.color || event.calendar_color || "#1a73e8",
+      isExisting: true,
+    });
+  }, []);
+
+  const handleDetailsClose = useCallback(() => {
+    setDetailsState((d) => ({ ...d, show: false, event: null }));
   }, []);
 
   // Right-click on event → context menu
@@ -195,8 +212,13 @@ function CalendarApp() {
           onToggleUpcoming={() => setShowUpcomingEvents(!showUpcomingEvents)}
           onOpenHolidaySettings={() => setShowHolidaySettings(true)}
           onToggleSidebar={() => setShowSidebar(!showSidebar)}
+          activeApp={activeApp}
+          onChangeApp={setActiveApp}
         />
 
+        {activeApp === "tasks" ? (
+          <TasksView collapsed={!showSidebar} />
+        ) : (
         <div className="relative flex flex-1 overflow-hidden h-full">
           <CalendarSidebar onCreateEvent={handleCreateEvent} collapsed={!showSidebar} />
           <CalendarView
@@ -220,6 +242,7 @@ function CalendarApp() {
             </div>
           )}
         </div>
+        )}
 
         <NotificationCenter />
 
@@ -246,13 +269,23 @@ function CalendarApp() {
           />
         )}
 
+        {detailsState.show && detailsState.event && (
+          <EventDetailsPopover
+            event={detailsState.event}
+            x={detailsState.x}
+            y={detailsState.y}
+            onClose={handleDetailsClose}
+            onEdit={handleDetailsEdit}
+          />
+        )}
+
         {contextMenu && (
           <EventContextMenu
             event={contextMenu.event}
             x={contextMenu.x}
             y={contextMenu.y}
             onClose={() => setContextMenu(null)}
-            onEdit={(ev) => handleEventClick(ev)}
+            onEdit={(ev) => handleDetailsEdit(ev)}
           />
         )}
       </div>

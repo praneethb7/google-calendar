@@ -61,19 +61,42 @@ function RecurringEventPicker({ value, onChange }) {
   ];
 
   return (
-    <div className="space-y-3">
+    <div>
       {!showCustom ? (
-        <div className="space-y-1">
+        <div
+          className="rounded-[4px] bg-[#1e1f20] py-1"
+          style={{
+            width: '249px',
+            boxShadow:
+              '0 1px 2px 0 rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15)',
+          }}
+          aria-label="Recurrence"
+          role="listbox"
+        >
           {presets.map((preset, index) => (
             <button
               key={index}
               type="button"
+              role="option"
+              aria-selected={value === preset.value}
               onClick={() => handlePresetChange(preset.value)}
-              className={`w-full text-left px-3 py-2 rounded hover:bg-google-gray-100 text-sm transition-colors ${
-                value === preset.value ? 'bg-google-blue-50 text-google-blue-700 font-medium' : 'text-google-gray-700'
+              className={`flex w-full items-center gap-3 px-3 text-left transition-colors hover:bg-[#444746] ${
+                value === preset.value ? 'bg-[#444746]' : ''
               }`}
+              style={{ minHeight: '26px', paddingTop: '3px', paddingBottom: '3px' }}
             >
-              {preset.label}
+              <span
+                className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{
+                  fontFamily:
+                    '"Google Sans", Roboto, Arial, sans-serif',
+                  fontSize: '13px',
+                  lineHeight: '18px',
+                  color: '#e3e3e3',
+                }}
+              >
+                {preset.label}
+              </span>
             </button>
           ))}
         </div>
@@ -99,7 +122,7 @@ function RecurringEventPicker({ value, onChange }) {
                 min="1"
                 value={interval}
                 onChange={(e) => setInterval(e.target.value)}
-                className="input-field text-sm"
+                className="input-field text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
 
@@ -184,7 +207,7 @@ function RecurringEventPicker({ value, onChange }) {
                     setUntil('');
                   }}
                   disabled={!count}
-                  className="input-field text-sm w-20"
+                  className="input-field text-sm w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <span className="text-sm text-google-gray-700">occurrences</span>
               </label>

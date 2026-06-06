@@ -1,6 +1,7 @@
 "use client";
 // EventModal.jsx - Fixed version with proper reminder handling
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useCalendarStore } from "@/store/useCalendarStore";
 import RecurringEventPicker from "./RecurringEventPicker";
 import AttendeePicker from "./AttendeePicker";
@@ -82,6 +83,18 @@ function EventModal({ event, onClose, onEventSaved }) {
 
   const [attendees, setAttendees] = useState([]);
   const [showRecurring, setShowRecurring] = useState(false);
+  const recurBtnRef = useRef(null);
+  const [recurPos, setRecurPos] = useState(null);
+  const openRecurring = () => {
+    setShowRecurring((s) => {
+      const next = !s;
+      if (next && recurBtnRef.current) {
+        const r = recurBtnRef.current.getBoundingClientRect();
+        setRecurPos({ left: r.left, top: r.bottom + 4 });
+      }
+      return next;
+    });
+  };
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [recurringEditScope, setRecurringEditScope] = useState(null);
@@ -345,7 +358,7 @@ function EventModal({ event, onClose, onEventSaved }) {
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
             {formData.startTime && <HolidayBadge date={formData.startTime} />}
 
             {/* Date/time */}
@@ -360,7 +373,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     name="startTime"
                     value={formData.startTime}
                     onChange={handleChange}
-                    className="px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
+                    className="px-3 py-2 text-sm rounded-md border-none bg-gray-100 dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 w-auto hover:bg-gray-200 dark:hover:bg-[#444746] transition-colors"
                   />
                   <span className="text-gray-500">–</span>
                   <input
@@ -368,7 +381,7 @@ function EventModal({ event, onClose, onEventSaved }) {
                     name="endTime"
                     value={formData.endTime}
                     onChange={handleChange}
-                    className="px-3 py-2 text-sm rounded-md border dark:border-[#444746] bg-white dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 flex-1"
+                    className="px-3 py-2 text-sm rounded-md border-none bg-gray-100 dark:bg-[#3c4043] text-gray-900 dark:text-gray-100 w-auto hover:bg-gray-200 dark:hover:bg-[#444746] transition-colors"
                   />
                 </div>
                 <label className="flex items-center gap-2 mt-2">
@@ -393,7 +406,8 @@ function EventModal({ event, onClose, onEventSaved }) {
               </span>
               <div className="flex-1">
                 <button
-                  onClick={() => setShowRecurring((s) => !s)}
+                  ref={recurBtnRef}
+                  onClick={openRecurring}
                   className="text-sm px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"
                 >
                   {getRecurrenceText()}
@@ -401,14 +415,29 @@ function EventModal({ event, onClose, onEventSaved }) {
                     {showRecurring ? "expand_less" : "expand_more"}
                   </span>
                 </button>
-                {showRecurring && (
-                  <div className="mt-2">
-                    <RecurringEventPicker
-                      value={formData.recurrenceRule}
-                      onChange={handleRecurrenceChange}
-                    />
-                  </div>
-                )}
+                {showRecurring &&
+                  recurPos &&
+                  createPortal(
+                    <>
+                      <div
+                        className="fixed inset-0 z-[60]"
+                        onClick={() => setShowRecurring(false)}
+                      />
+                      <div
+                        className="fixed z-[61]"
+                        style={{ left: recurPos.left, top: recurPos.top }}
+                      >
+                        <RecurringEventPicker
+                          value={formData.recurrenceRule}
+                          onChange={(rule) => {
+                            handleRecurrenceChange(rule);
+                            setShowRecurring(false);
+                          }}
+                        />
+                      </div>
+                    </>,
+                    document.body,
+                  )}
               </div>
             </div>
 
